@@ -1168,14 +1168,20 @@ footer { background: var(--gray-900); color: rgba(255,255,255,.5); padding: 56px
         </div>
 
         <div class="product-card reveal" onclick="Modal.open('pillmanager')" role="button" tabindex="0">
-          <div class="product-card-header">
-            <div class="product-icon" style="background:#f5f3ff">💊</div>
-            <div class="product-arrow">→</div>
+          <div style="position:relative;">
+            <div class="product-arrow" style="position:absolute;top:10px;right:10px;z-index:2;background:rgba(255,255,255,0.85);backdrop-filter:blur(4px);">→</div>
+            <div class="product-icon-banner" style="width:100%;margin-bottom:16px;border-radius:10px;overflow:hidden;background:#ffffff;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;">
+              <img src="pill%20box%20icon.jpg" alt="Pill Manager Icon" style="width:100%; height:100%; object-fit:cover; display:block; filter: brightness(1.05) contrast(1.03);" />
+            </div>
           </div>
           <div class="product-name">Pill Manager</div>
           <div class="product-tagline">Medication Management &amp; Adherence</div>
           <div class="product-desc">Patient-centered medication management with schedule tracking, refill history, cost monitoring, reminders, and privacy-first local data storage.</div>
-          <div class="product-tags"><span class="product-tag">iOS</span><span class="product-tag">Patient Health</span><span class="product-tag">Reminders</span></div>
+          <div class="product-tags">
+            <span class="product-tag">iOS</span>
+            <span class="product-tag">Patient Health</span>
+            <span class="product-tag">Reminders</span>
+          </div>
         </div>
 
         <div class="product-card reveal" onclick="Modal.open('pharminventory')" role="button" tabindex="0">
