@@ -1822,6 +1822,7 @@ footer { background: var(--gray-900); color: rgba(255,255,255,.5); padding: 56px
      PAGE: DOSAGE FORMS Q-BANK
 ════════════════════════════════════════ -->
 <div id="page-qbank" class="page active page-wrap">
+  <div class="pd-sitebar" role="navigation" aria-label="PharmDigit"><a class="pd-back" href="/" onclick="navigate('home');return false;"><span class="pd-mark"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></span><span><span class="pd-long">Back to </span>PharmDigit</span></a><div class="pd-links"><a class="pd-keep" href="/products" onclick="navigate('products');return false;">All apps</a><a href="/contact" onclick="navigate('contact');return false;">Contact</a></div></div>
   <div id="qbank" data-app="dosage-forms-qbank">
     <div class="qb-app">
       <div class="topbar">
@@ -2335,6 +2336,344 @@ window.PharmDigit = (function () {
 })();
 </script>
 
+<style id="pd-shared-css">/* PharmDigit back bar — identical in Dosage Forms Q-Bank, PharmCalculation and PharmPK */
+.pd-sitebar{--pdsb-bg:#f1f4f5;--pdsb-line:#dde3e6;--pdsb-fg:#4b5563;--pdsb-teal:#0d9488;--pdsb-teal-ink:#fff;--pdsb-surface:#fff;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;box-sizing:border-box;width:100%;
+  background:var(--pdsb-bg);border-bottom:1px solid var(--pdsb-line);padding:8px 16px;margin:0;
+  font:600 14px/1.3 Inter,'Segoe UI',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+.pd-sitebar *{box-sizing:border-box}
+.pd-sitebar .pd-back{display:inline-flex;align-items:center;gap:9px;min-height:42px;padding:5px 16px 5px 6px;margin:0;
+  border:1.5px solid var(--pdsb-teal);border-radius:999px;background:var(--pdsb-surface);color:var(--pdsb-teal);
+  font:700 15px/1.2 Inter,'Segoe UI',system-ui,-apple-system,sans-serif;text-decoration:none;white-space:nowrap;
+  transition:background .15s ease,color .15s ease,box-shadow .15s ease}
+.pd-sitebar .pd-back:hover{background:var(--pdsb-teal);color:var(--pdsb-teal-ink);text-decoration:none;box-shadow:0 2px 10px rgba(13,148,136,.25)}
+.pd-sitebar .pd-back:focus-visible{outline:3px solid var(--pdsb-teal);outline-offset:2px}
+.pd-sitebar .pd-back svg{flex:none;width:18px;height:18px}
+.pd-sitebar .pd-mark{flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--pdsb-teal);color:#fff;
+  font:700 12px/1 Inter,'Segoe UI',system-ui,sans-serif;letter-spacing:-.02em;transition:background .15s ease,color .15s ease}
+.pd-sitebar .pd-back:hover .pd-mark{background:#fff;color:var(--pdsb-teal)}
+.pd-sitebar .pd-links{display:flex;align-items:center;gap:4px 18px;flex-wrap:wrap;justify-content:flex-end;margin:0;padding:0}
+.pd-sitebar .pd-links a{color:var(--pdsb-fg);text-decoration:none;font:600 14px/1.3 Inter,'Segoe UI',system-ui,sans-serif;padding:6px 0;white-space:nowrap}
+.pd-sitebar .pd-links a:hover{color:var(--pdsb-teal);text-decoration:underline}
+@media (max-width:640px){
+  .pd-sitebar{padding:8px 12px}
+  .pd-sitebar .pd-links a:not(.pd-keep){display:none}
+  .pd-sitebar .pd-back{min-height:44px}
+}
+@media (max-width:360px){.pd-sitebar .pd-back .pd-long{display:none}}
+@media print{.pd-sitebar{display:none}}
+
+/* Q-Bank: back bar sits at the top of the Q-Bank page, under the site header */
+#page-qbank > .pd-sitebar{position:relative;z-index:1}
+/* Q-Bank: account button (shared PharmDigit design) */
+#qbank nav.tabs .acct button.acct-btn{display:inline-flex;align-items:center;gap:6px;border-radius:7px;font-size:.84rem;font-weight:600;line-height:1.2;cursor:pointer;min-height:34px}
+#qbank nav.tabs .acct button.acct-btn.pro{border-color:#1e7a4c;color:#1e7a4c;background:#e2f3ea}
+#qbank nav.tabs .acct button.acct-btn.hot{border-color:#b3261e;color:#b3261e;background:#fff}
+#qbank nav.tabs .acct button.acct-btn svg{flex:none}
+@media (max-width:600px){#qbank nav.tabs .acct .pdx-as{display:inline}#qbank nav.tabs .acct .pdx-as~.pdx-al{display:none}}
+/* Q-Bank: small phones (320-420px) - no sideways scrolling */
+@media (max-width:420px){
+  #qbank .topic-row{flex-wrap:wrap;row-gap:6px}
+  #qbank .topic-row .tname{flex:1 1 0;min-width:0}
+  #qbank .topic-row .tbarwrap{order:5;flex:1 0 100%}
+  #qbank .topic-row .mastery-badge{white-space:nowrap}
+  #qbank .topic-picker{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #qbank .topic-chip{min-width:0;padding:10px}
+  #qbank .topic-chip .tc-name{min-width:0;overflow-wrap:anywhere}
+  #qbank .topic-chip .tc-pct{white-space:nowrap}
+  #qbank .card .flex-between{flex-wrap:wrap;row-gap:12px}
+  #qbank .card .flex-between .btn-block{max-width:100%}
+}
+@media (max-width:340px){#qbank .topic-picker{grid-template-columns:1fr}}
+</style>
+<script>
+/* ════════════════════════════════════════════════════════════════
+   PharmDigit shared account UI  (PDX)
+   Same sign-in, account and "days remaining" experience in
+   Dosage Forms Q-Bank, PharmCalculation and PharmPK.
+   UI only: every app keeps its own Firebase Auth, Stripe checkout,
+   pass storage and access rules. Each app calls PDX with callbacks
+   that run its existing logic.
+   ════════════════════════════════════════════════════════════════ */
+window.PDX = window.PDX || (function () {
+  'use strict';
+  var cfg = { accent: '#b85c00', accentInk: '#ffffff', font: 'inherit', display: 'inherit', z: 3000, dark: [] };
+  var scrim = null, box = null, current = null, lastFocus = null, onClose = null, toastT = null;
+  var DAY = 864e5;
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function $(sel, r) { return (r || document).querySelector(sel); }
+  function $$(sel, r) { return Array.prototype.slice.call((r || document).querySelectorAll(sel)); }
+  function fmtDate(ms) { return new Date(ms).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); }
+  function daysLeft(ms) { return ms == null ? null : Math.max(0, Math.ceil((ms - Date.now()) / DAY)); }
+  function plural(n, w) { return n + ' ' + w + (n === 1 ? '' : 's'); }
+
+  var USER_IC = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>';
+  var G_IC = '<svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>';
+
+  /* ---------- styles (scoped to .pdx-*) ---------- */
+  var LIGHT = '--pdx-bg:#f5f6f8;--pdx-surface:#fff;--pdx-sunk:#eceef2;--pdx-line:#d9dde4;--pdx-line-strong:#bcc3ce;--pdx-fg:#18202c;--pdx-muted:#5a6475;' +
+    '--pdx-ok:#1e7a4c;--pdx-ok-soft:#e2f3ea;--pdx-bad:#b3261e;--pdx-bad-soft:#fbe7e5;--pdx-hint:#4a4fb3;--pdx-hint-soft:#e9eafb;--pdx-warn-soft:#fdf3d8;';
+  var DARK = '--pdx-bg:#0f141b;--pdx-surface:#161d27;--pdx-sunk:#1c2532;--pdx-line:#2a3544;--pdx-line-strong:#3b4859;--pdx-fg:#e7ebf1;--pdx-muted:#a3adbd;' +
+    '--pdx-ok:#5cc98f;--pdx-ok-soft:#14291e;--pdx-bad:#ff8a80;--pdx-bad-soft:#331a19;--pdx-hint:#a9adff;--pdx-hint-soft:#1f2140;--pdx-warn-soft:#2e2611;';
+  function buildCss() {
+    var S = '.pdx-scrim,.pdx-toast';
+    var css =
+      S + '{' + LIGHT + '--pdx-accent:' + cfg.accent + ';--pdx-accent-ink:' + cfg.accentInk + ';--pdx-font:' + cfg.font + ';--pdx-display:' + cfg.display + '}' +
+      '.pdx-scrim{position:fixed;inset:0;z-index:' + cfg.z + ';background:rgba(10,14,20,.55);display:grid;place-items:center;padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));overflow-y:auto;font-family:var(--pdx-font);-webkit-font-smoothing:antialiased}' +
+      '.pdx-scrim[hidden]{display:none}' +
+      '.pdx-box{position:relative;box-sizing:border-box;background:var(--pdx-surface);color:var(--pdx-fg);border:1px solid var(--pdx-line);border-radius:14px;width:min(460px,100%);padding:24px;display:grid;gap:14px;box-shadow:0 20px 50px rgba(0,0,0,.3);max-height:calc(100vh - 32px);overflow-y:auto;font:400 15px/1.55 var(--pdx-font);text-align:left;margin:0}' +
+      '.pdx-box *{box-sizing:border-box}' +
+      '.pdx-box h2{font:700 1.6rem/1.15 var(--pdx-display);letter-spacing:-.01em;margin:0;padding:0 30px 0 0;color:var(--pdx-fg);text-wrap:balance}' +
+      '.pdx-box p{margin:0;padding:0}.pdx-box b,.pdx-box strong{font-weight:700}' +
+      '.pdx-box a{color:var(--pdx-accent);text-decoration:underline}' +
+      '.pdx-small{font-size:.86rem}.pdx-muted{color:var(--pdx-muted)}' +
+      '.pdx-x{position:absolute;top:10px;right:12px;background:none;border:0;font:400 1.5rem/1 var(--pdx-font);color:var(--pdx-muted);cursor:pointer;padding:4px 8px;margin:0;border-radius:6px;width:auto;min-height:0}' +
+      '.pdx-x:hover{background:var(--pdx-sunk);color:var(--pdx-fg)}' +
+      '.pdx-seg{display:flex;border:1px solid var(--pdx-line-strong);border-radius:6px;overflow:hidden;margin:0}' +
+      '.pdx-seg button{border:0;border-radius:0;background:var(--pdx-surface);padding:7px 12px;margin:0;font:600 .85rem/1.4 var(--pdx-font);cursor:pointer;color:var(--pdx-muted);width:auto;min-height:0;box-shadow:none}' +
+      '.pdx-seg button+button{border-left:1px solid var(--pdx-line-strong)}' +
+      '.pdx-seg button[aria-pressed="true"]{background:var(--pdx-fg);color:var(--pdx-surface)}' +
+      '.pdx-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:6px;padding:9px 16px;margin:0;font:600 .92rem/1.4 var(--pdx-font);border:1px solid var(--pdx-line-strong);background:var(--pdx-surface);color:var(--pdx-fg);cursor:pointer;text-decoration:none;width:auto;min-height:40px;box-shadow:none;text-transform:none;letter-spacing:normal}' +
+      '.pdx-btn:hover{border-color:var(--pdx-fg)}' +
+      '.pdx-btn.primary{background:var(--pdx-accent);border-color:var(--pdx-accent);color:var(--pdx-accent-ink)}.pdx-btn.primary:hover{filter:brightness(1.06)}' +
+      '.pdx-btn.ghost{border-color:transparent;background:transparent;color:var(--pdx-muted)}.pdx-btn.ghost:hover{background:var(--pdx-sunk);color:var(--pdx-fg)}' +
+      '.pdx-btn.block{width:100%}.pdx-btn:disabled{opacity:.45;cursor:not-allowed}' +
+      '.pdx-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}' +
+      '.pdx-or{display:flex;align-items:center;gap:10px;color:var(--pdx-muted);font-size:.8rem}.pdx-or::before,.pdx-or::after{content:"";flex:1;border-top:1px solid var(--pdx-line)}' +
+      '.pdx-form{display:grid;gap:10px;margin:0}' +
+      '.pdx-field{display:grid;gap:4px;min-width:0}' +
+      '.pdx-field label{font:600 .76rem/1.4 var(--pdx-font);color:var(--pdx-muted);text-transform:uppercase;letter-spacing:.06em;margin:0;padding:0}' +
+      '.pdx-field input{display:block;padding:9px 10px;margin:0;border:1px solid var(--pdx-line-strong);border-radius:6px;background:var(--pdx-bg);color:var(--pdx-fg);width:100%;font:400 16px/1.4 var(--pdx-font);min-height:42px;box-shadow:none}' +
+      '.pdx-field input:focus{outline:2px solid var(--pdx-accent);outline-offset:1px}' +
+      '.pdx-err{color:var(--pdx-bad);font-size:.86rem}.pdx-err.info{color:var(--pdx-ok)}.pdx-err:empty{display:none}' +
+      '.pdx-fb{border-radius:10px;padding:12px 14px;display:grid;gap:6px;font-size:.92rem;border:1px solid;margin:0}' +
+      '.pdx-fb.ok{background:var(--pdx-ok-soft);border-color:color-mix(in srgb,var(--pdx-ok) 40%,transparent)}' +
+      '.pdx-fb.bad{background:var(--pdx-bad-soft);border-color:color-mix(in srgb,var(--pdx-bad) 40%,transparent)}' +
+      '.pdx-fb.hint{background:var(--pdx-hint-soft);border-color:color-mix(in srgb,var(--pdx-hint) 40%,transparent)}' +
+      '.pdx-fb .ttl{font-weight:700}' +
+      '.pdx-meter{height:6px;border-radius:3px;background:color-mix(in srgb,var(--pdx-ok) 18%,transparent);overflow:hidden}.pdx-meter i{display:block;height:100%;background:var(--pdx-ok);border-radius:3px}' +
+      '.pdx-meter.low i{background:var(--pdx-bad)}' +
+      '.pdx-note{background:var(--pdx-warn-soft);border-radius:8px;padding:8px 10px;font-size:.84rem}' +
+      '.pdx-tools{border:1px dashed var(--pdx-line-strong);border-radius:6px;padding:10px 12px;display:grid;gap:8px}.pdx-tools summary{cursor:pointer;font-weight:600;font-size:.86rem}' +
+      '.pdx-check{display:flex;gap:10px;align-items:flex-start;font-size:.86rem}.pdx-check input{margin-top:3px;flex:none;width:auto;min-height:0}' +
+      '.pdx-toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--pdx-fg);color:var(--pdx-surface);padding:10px 16px;border-radius:8px;font:500 .88rem/1.4 var(--pdx-font);z-index:' + (cfg.z + 10) + ';max-width:calc(100vw - 32px);box-shadow:0 8px 24px rgba(0,0,0,.25)}' +
+      '.pdx-toast[hidden]{display:none}' +
+      '.pdx-as{display:none}' +
+      '@media (max-width:520px){.pdx-box{padding:20px 18px}.pdx-box h2{font-size:1.4rem}.pdx-row .pdx-btn{flex:1 1 auto}}';
+    var dk = DARK + (cfg.darkAccent ? '--pdx-accent:' + cfg.darkAccent + ';--pdx-accent-ink:' + (cfg.darkAccentInk || '#000') + ';' : '');
+    (cfg.dark || []).forEach(function (sel) {
+      // 'auto' = follow the system setting unless the app forces light; otherwise a selector such as ':root[data-theme=dark]'
+      if (sel === 'auto') css += '@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pdx-scrim,:root:not([data-theme="light"]) .pdx-toast{' + dk + '}}';
+      else css += sel + ' .pdx-scrim,' + sel + ' .pdx-toast{' + dk + '}';
+    });
+    return css;
+  }
+  var styleEl = null;
+  function init(o) {
+    for (var k in o) cfg[k] = o[k];
+    if (!styleEl) { styleEl = document.createElement('style'); styleEl.id = 'pdx-style'; document.head.appendChild(styleEl); }
+    styleEl.textContent = buildCss();
+  }
+
+  /* ---------- modal shell ---------- */
+  function ensure() {
+    if (scrim) return;
+    if (!styleEl) init({});
+    scrim = document.createElement('div'); scrim.className = 'pdx-scrim'; scrim.hidden = true;
+    scrim.innerHTML = '<div class="pdx-box" role="dialog" aria-modal="true" aria-labelledby="pdx-title"><button class="pdx-x" type="button" aria-label="Close">&times;</button><div class="pdx-body" style="display:grid;gap:14px"></div></div>';
+    document.body.appendChild(scrim);
+    box = $('.pdx-box', scrim);
+    $('.pdx-x', scrim).addEventListener('click', function () { close(); });
+    scrim.addEventListener('mousedown', function (e) { if (e.target === scrim && !scrim._lock) close(); });
+    document.addEventListener('keydown', function (e) {
+      if (scrim.hidden) return;
+      if (e.key === 'Escape' && !scrim._lock) { e.stopPropagation(); close(); }
+      if (e.key === 'Tab') {                                   // keep focus inside the dialog
+        var f = $$('button,input,a[href],select,textarea,summary,[tabindex]:not([tabindex="-1"])', box).filter(function (x) { return !x.disabled && x.offsetParent !== null; });
+        if (!f.length) return;
+        if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+        else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+      }
+    }, true);
+  }
+  function modal(kind, html, mount, opts) {
+    ensure(); opts = opts || {};
+    if (scrim.hidden) lastFocus = document.activeElement;
+    current = kind; onClose = opts.onClose || null; scrim._lock = !!opts.lock;
+    $('.pdx-x', scrim).hidden = !!opts.lock;
+    $('.pdx-body', scrim).innerHTML = html;
+    scrim.hidden = false; document.documentElement.style.overflow = 'hidden';
+    if (mount) mount(box);
+    setTimeout(function () { var f = $('[autofocus]', box) || $('input,button:not(.pdx-x)', box); if (f) f.focus(); }, 30);
+  }
+  function close() {
+    if (!scrim || scrim.hidden) return;
+    scrim.hidden = true; document.documentElement.style.overflow = '';
+    var cb = onClose; current = null; onClose = null;
+    try { if (lastFocus && lastFocus.focus) lastFocus.focus(); } catch (e) {}
+    if (cb) cb();
+  }
+  function isOpen(kind) { return !!scrim && !scrim.hidden && (!kind || current === kind); }
+
+  function toast(msg, ms) {
+    var el = $('#pdx-toast');
+    if (!el) { if (!styleEl) init({}); el = document.createElement('div'); el.id = 'pdx-toast'; el.className = 'pdx-toast'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
+    el.textContent = msg; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(function () { el.hidden = true; }, ms || 3800);
+  }
+
+  /* ---------- sign in / create account ---------- */
+  var validEmail = function (e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); };
+  function openAuth(o) {
+    o = o || {};
+    var mode = o.mode === 'signup' ? 'signup' : 'signin', up = mode === 'signup', minPw = o.minPw || 6;
+    var note = up ? (o.noteSignup || o.note) : (o.noteSignin || o.note);
+    var field = function (id, label, type, ac, extra) { return '<div class="pdx-field"><label for="' + id + '">' + label + '</label><input id="' + id + '" type="' + type + '" autocomplete="' + ac + '"' + (extra || '') + '></div>'; };
+    modal('auth',
+      '<h2 id="pdx-title">' + esc(up ? (o.titleSignup || 'Create your account') : (o.titleSignin || 'Sign in')) + '</h2>' +
+      (note ? '<p class="pdx-small">' + esc(note) + '</p>' : '') +
+      '<div class="pdx-seg" role="group" aria-label="Account"><button type="button" data-pdx-mode="signin" aria-pressed="' + !up + '">Sign in</button><button type="button" data-pdx-mode="signup" aria-pressed="' + up + '">Create account</button></div>' +
+      (o.google ? '<button class="pdx-btn block" type="button" id="pdx-google">' + G_IC + 'Continue with Google</button><div class="pdx-or"><span>or</span></div>' : '') +
+      '<form class="pdx-form" id="pdx-auth" novalidate>' +
+        (up && o.nameField ? field('pdx-name', 'Name', 'text', 'name') : '') +
+        field('pdx-email', 'Email', 'email', 'email', ' inputmode="email" autocapitalize="off" spellcheck="false" required') +
+        field('pdx-pw', 'Password' + (up ? ' (' + minPw + ' characters or more)' : ''), 'password', up ? 'new-password' : 'current-password', ' required') +
+        (up ? field('pdx-pw2', 'Confirm password', 'password', 'new-password', ' required') : '') +
+        '<p class="pdx-err" id="pdx-aerr" role="alert"></p>' +
+        '<div class="pdx-row"><button class="pdx-btn primary" type="submit" id="pdx-go">' + (up ? 'Create account' : 'Sign in') + '</button>' +
+        (!up && o.onForgot ? '<button class="pdx-btn ghost" type="button" id="pdx-forgot">Forgot password?</button>' : '') + '</div>' +
+      '</form>' +
+      (up && o.termsHtml ? '<p class="pdx-small pdx-muted">' + o.termsHtml + '</p>' : '') +
+      (o.footHtml ? '<p class="pdx-small pdx-muted">' + o.footHtml + '</p>' : ''),
+      function (b) {
+        var er = $('#pdx-aerr', b);
+        var say = function (t, info) { er.textContent = t || ''; er.className = 'pdx-err' + (info ? ' info' : ''); };
+        if (o.email) $('#pdx-email', b).value = o.email;
+        $$('[data-pdx-mode]', b).forEach(function (x) {
+          x.addEventListener('click', function () { if (x.dataset.pdxMode === mode) return; var em = $('#pdx-email', b).value; openAuth(Object.assign({}, o, { mode: x.dataset.pdxMode, email: em })); });
+        });
+        var g = $('#pdx-google', b);
+        if (g) g.addEventListener('click', function () {
+          say(''); g.disabled = true;
+          Promise.resolve().then(o.onGoogle).then(function () { g.disabled = false; }, function (x) { g.disabled = false; say((x && x.message) || ''); });
+        });
+        var fg = $('#pdx-forgot', b);
+        if (fg) fg.addEventListener('click', function () {
+          var em = $('#pdx-email', b).value.trim();
+          if (!validEmail(em)) { say('Enter your email above, then select Forgot password.'); $('#pdx-email', b).focus(); return; }
+          fg.disabled = true;
+          Promise.resolve(o.onForgot(em)).then(function (msg) { fg.disabled = false; say(msg || 'If an account exists for that email, a reset link has been sent. Check your Junk or Spam folder if it does not arrive.', true); },
+            function (x) { fg.disabled = false; say((x && x.message) || 'Could not send the reset email.'); });
+        });
+        $('#pdx-auth', b).addEventListener('submit', function (e) {
+          e.preventDefault(); say('');
+          var name = up && o.nameField ? $('#pdx-name', b).value.trim() : '', email = $('#pdx-email', b).value.trim(), pw = $('#pdx-pw', b).value;
+          if (up && o.nameField && !name) return say('Enter your name.');
+          if (!validEmail(email)) return say('Enter a valid email address.');
+          if (!pw) return say('Enter your password.');
+          if (up && pw.length < minPw) return say('Use a password with at least ' + minPw + ' characters.');
+          if (up && pw !== $('#pdx-pw2', b).value) return say('Passwords do not match.');
+          var go = $('#pdx-go', b); go.disabled = true; go.textContent = up ? 'Creating account…' : 'Signing in…';
+          Promise.resolve().then(function () { return o.onSubmit({ mode: mode, name: name, email: email, password: pw }); }).then(function () {
+            if (isOpen('auth')) { go.disabled = false; go.textContent = up ? 'Create account' : 'Sign in'; }
+          }, function (x) { go.disabled = false; go.textContent = up ? 'Create account' : 'Sign in'; say((x && x.message) || 'Something went wrong. Try again.'); });
+        });
+        if (o.onMount) o.onMount(b);
+      }, { onClose: o.onClose });
+  }
+
+  /* ---------- account dialog ---------- */
+  // st: { kind:'ok'|'bad'|'hint', title, text, meter: 0..1|null, low:bool }
+  function statusCard(st) {
+    if (!st) return '';
+    return '<div class="pdx-fb ' + (st.kind || 'hint') + '"><span class="ttl">' + esc(st.title) + '</span>' +
+      (st.meter != null ? '<div class="pdx-meter' + (st.low ? ' low' : '') + '" role="img" aria-label="' + esc(st.title) + '"><i style="width:' + Math.max(2, Math.round(Math.min(1, st.meter) * 100)) + '%"></i></div>' : '') +
+      (st.text ? '<span>' + esc(st.text) + '</span>' : '') + '</div>';
+  }
+  function openAccount(o) {
+    o = o || {};
+    var acts = o.actions || [];
+    modal('account',
+      '<h2 id="pdx-title">' + esc(o.title || 'Your account') + '</h2>' +
+      (o.email ? '<p class="pdx-small pdx-muted">Signed in as <b>' + esc(o.email) + '</b></p>' : (o.signedOutText ? '<p class="pdx-small pdx-muted">' + esc(o.signedOutText) + '</p>' : '')) +
+      statusCard(o.status) +
+      (acts.length ? '<div class="pdx-row">' + acts.map(function (a, i) { return '<button class="pdx-btn' + (a.primary ? ' primary' : '') + (a.ghost ? ' ghost' : '') + '" type="button" data-pdx-act="' + i + '"' + (a.id ? ' id="' + a.id + '"' : '') + '>' + esc(a.label) + '</button>'; }).join('') + '</div>' : '') +
+      (o.note ? '<p class="pdx-small pdx-muted">' + esc(o.note) + '</p>' : '') +
+      (o.extraHtml || ''),
+      function (b) {
+        $$('[data-pdx-act]', b).forEach(function (x) { x.addEventListener('click', function () { var a = acts[+x.dataset.pdxAct]; if (a && a.onClick) a.onClick(x, b); }); });
+        if (o.onMount) o.onMount(b);
+      }, { onClose: o.onClose });
+  }
+
+  /* ---------- account button label ---------- */
+  // a: { ready, signedIn, state:'active'|'expired'|'free'|'checking'|'error', plan:'semester'|'lifetime', expiresAt, semName }
+  function label(a) {
+    if (!a.ready) return { long: '…', short: '', pro: false, aria: 'Checking your account' };
+    if (!a.signedIn) return { long: 'Sign in', short: '', pro: false, aria: 'Sign in or create an account' };
+    if (a.state === 'active' && a.plan === 'lifetime') return { long: 'Lifetime', short: '', pro: true, aria: 'Account: Lifetime access' };
+    if (a.state === 'active') { var d = daysLeft(a.expiresAt); return { long: (a.semName || 'Semester') + ' · ' + d + 'd', short: d + 'd', pro: true, aria: 'Account: ' + (a.semName || 'Semester') + ', ' + plural(d, 'day') + ' remaining' }; }
+    if (a.state === 'expired') return { long: 'Renew', short: '', pro: false, expired: true, aria: 'Account: your pass has expired' };
+    return { long: 'Account', short: '', pro: false, aria: 'Account' };
+  }
+  // short label first so a narrow-screen rule can show it and hide the long one: .pdx-as{display:inline} .pdx-as~.pdx-al{display:none}
+  function buttonHTML(l, icon) { return (icon === false ? '' : USER_IC) + (l.short ? '<span class="pdx-as">' + esc(l.short) + '</span>' : '') + '<span class="pdx-al">' + esc(l.long) + '</span>'; }
+
+  /* status card for the account dialog */
+  function passStatus(a) {
+    var sem = a.semName || 'Semester Pass';
+    if (a.state === 'error') return { kind: 'bad', title: 'We could not check your pass right now', text: a.errorText || 'Check your connection and try again.' };
+    if (a.state === 'checking') return { kind: 'hint', title: 'Checking your pass…', text: '' };
+    if (a.state === 'active' && a.plan === 'lifetime') return { kind: 'ok', title: a.lifeName || 'Lifetime Pass', text: 'Full access · no expiration' + (a.purchasedAt ? ' · purchased ' + fmtDate(a.purchasedAt) : '') };
+    if (a.state === 'active') {
+      var d = daysLeft(a.expiresAt), term = a.termDays || 183;
+      return { kind: 'ok', title: sem + ' · ' + plural(d, 'day') + ' remaining', meter: d / term, low: d <= 14, text: 'Full access until ' + fmtDate(a.expiresAt) + (a.purchasedAt ? ' · first purchased ' + fmtDate(a.purchasedAt) : '') };
+    }
+    if (a.state === 'expired') return { kind: 'bad', title: sem + ' expired', text: 'Ended ' + fmtDate(a.expiresAt) + '. ' + (a.freeText || '') };
+    return { kind: 'hint', title: 'Free access', text: a.freeText || '' };
+  }
+
+  /* ---------- keep "days remaining" current ---------- */
+  var tickers = [];
+  function every(fn) {
+    tickers.push(fn);
+    if (tickers.length === 1) {
+      var run = function () { tickers.forEach(function (f) { try { f(); } catch (e) { console.error(e); } }); };
+      setInterval(run, 60000);
+      document.addEventListener('visibilitychange', function () { if (!document.hidden) run(); });
+      window.addEventListener('focus', run);
+    }
+  }
+
+  /* ---------- one sign-in session per app ----------
+     A named Firebase app keeps its own sign-in session, so signing in or out of one PharmDigit app
+     does not sign anyone in or out of another. Same Firebase project, same accounts, same passes.
+     Once per app and browser, a session left in the old shared (default) app is copied over, so
+     students who were already signed in stay signed in after this update. */
+  function firebaseApp(fb, config, name) {
+    var app = fb.apps.filter(function (a) { return a.name === name; })[0] || fb.initializeApp(config, name);
+    var key = 'pd_auth_split_' + name, done = true;
+    try { done = localStorage.getItem(key) === '1'; if (!done) localStorage.setItem(key, '1'); } catch (e) { done = true; }
+    if (!done) {
+      try {
+        var def = fb.apps.filter(function (a) { return a.name === '[DEFAULT]'; })[0] || fb.initializeApp(config);
+        var first = function (auth) { return new Promise(function (res) { var un = auth.onAuthStateChanged(function (u) { un(); res(u); }); }); };
+        var mine = app.auth();
+        Promise.all([first(def.auth()), first(mine)]).then(function (r) {
+          if (r[0] && !r[1] && typeof mine.updateCurrentUser === 'function') return mine.updateCurrentUser(r[0]);
+        }).catch(function (e) { console.warn('PharmDigit: could not carry over the previous sign-in', e); });
+      } catch (e) { console.warn(e); }
+    }
+    return app;
+  }
+
+  return { init: init, firebaseApp: firebaseApp, modal: modal, close: close, isOpen: isOpen, toast: toast, openAuth: openAuth, openAccount: openAccount,
+    statusCard: statusCard, passStatus: passStatus, label: label, buttonHTML: buttonHTML, daysLeft: daysLeft, fmtDate: fmtDate, every: every, esc: esc, USER_IC: USER_IC };
+})();
+
+PDX.init({ accent: '#0d9488', accentInk: '#ffffff', font: "'Inter',system-ui,-apple-system,sans-serif", display: "'Lora',Georgia,serif", z: 2500 });
+</script>
+
 <!-- ════════════════════════════════════════
      FIREBASE SDK + STRIPE CHECKOUT ADAPTER
 ════════════════════════════════════════ -->
@@ -2405,7 +2744,8 @@ window.PharmDigit = (function () {
     var e = S.ent;
     if (!entActive(e)) return 'No paid plan yet';
     if (e.planType === 'lifetime') return 'Lifetime Access';
-    return '6-Month Access until ' + e.expiresAt.toDate().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+    var d = PDX.daysLeft(e.expiresAt.toMillis());
+    return '6-Month Access until ' + e.expiresAt.toDate().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) + ' (' + d + (d === 1 ? ' day' : ' days') + ' left)';
   }
 
   /* ---------- styles for the sign-in dialog and status banner ---------- */
@@ -2432,72 +2772,38 @@ window.PharmDigit = (function () {
     clearTimeout(bannerTimer); if (ms) bannerTimer = setTimeout(function () { bannerEl.className = ''; }, ms);
   }
 
-  /* ---------- sign-in dialog ---------- */
-  var authEl = document.createElement('div'); authEl.id = 'pd-auth'; authEl.setAttribute('role', 'dialog'); authEl.setAttribute('aria-modal', 'true');
-  authEl.innerHTML =
-    '<div class="box"><button class="close" type="button" aria-label="Close" data-a="close">&times;</button>' +
-    '<h2 id="pd-auth-title">Sign in to purchase</h2>' +
-    '<p class="sub" id="pd-auth-sub">Your account saves your purchase so you can unlock the Q-Bank on any device. The free 50 questions never need an account.</p>' +
-    '<button class="google" type="button" data-a="google">Continue with Google</button><div class="or">or use email</div>' +
-    '<form id="pd-auth-form" novalidate><label for="pd-email">Email</label><input id="pd-email" type="email" autocomplete="email" required>' +
-    '<label for="pd-pass">Password</label><input id="pd-pass" type="password" autocomplete="current-password" minlength="6" required>' +
-    '<button class="primary" id="pd-auth-submit" type="submit">Sign in</button></form>' +
-    '<div class="err" id="pd-auth-err" aria-live="polite"></div>' +
-    '<div class="row"><button class="link" type="button" data-a="toggle" id="pd-auth-toggle">Create an account</button><button class="link" type="button" data-a="reset">Forgot password?</button></div></div>';
-  document.body.appendChild(authEl);
-  var mode = 'signin';
-  function setMode(m) {
-    mode = m;
-    authEl.querySelector('#pd-auth-submit').textContent = m === 'signin' ? 'Sign in' : 'Create account';
-    authEl.querySelector('#pd-auth-toggle').textContent = m === 'signin' ? 'Create an account' : 'I already have an account';
-    authEl.querySelector('#pd-auth-title').textContent = S.pendingPlan ? (m === 'signin' ? 'Sign in to purchase' : 'Create an account to purchase') : (m === 'signin' ? 'Sign in' : 'Create account');
-    authEl.querySelector('#pd-pass').autocomplete = m === 'signin' ? 'current-password' : 'new-password';
-  }
-  function authErr(t) { var e = authEl.querySelector('#pd-auth-err'); e.className = 'err'; e.textContent = t || ''; }
-  function authInfo(t) { var e = authEl.querySelector('#pd-auth-err'); e.className = 'msg'; e.textContent = t; }
+  /* ---------- sign-in dialog (shared PharmDigit design: PDX) ---------- */
   function friendly(err) {
     var c = err && err.code || '';
     var map = {
       'auth/invalid-email': 'Please enter a valid email address.', 'auth/missing-password': 'Please enter your password.',
       'auth/wrong-password': 'Incorrect email or password.', 'auth/invalid-credential': 'Incorrect email or password.', 'auth/user-not-found': 'Incorrect email or password.',
-      'auth/email-already-in-use': 'An account with this email already exists. Try signing in.', 'auth/weak-password': 'Please choose a password with at least 6 characters.',
+      'auth/email-already-in-use': 'An account with this email already exists. Select Sign in and use that password.', 'auth/weak-password': 'Please choose a password with at least 6 characters.',
       'auth/too-many-requests': 'Too many attempts. Please wait a moment and try again.', 'auth/network-request-failed': 'Network problem. Check your connection and try again.',
       'auth/popup-closed-by-user': '', 'auth/cancelled-popup-request': '', 'auth/popup-blocked': 'Your browser blocked the sign-in pop-up. Allow pop-ups for this site, or use email.',
       'auth/operation-not-allowed': 'This sign-in method is not enabled yet. Please use another method.', 'auth/unauthorized-domain': 'Sign-in is not enabled for this website address yet.'
     };
     return c in map ? map[c] : 'Something went wrong. Please try again.';
   }
-  function openSignIn(plan) {
+  function fail(er) { var m = friendly(er); var x = new Error(m); x.silent = !m; throw x; }
+  function openSignIn(plan, mode) {
     if (!enabled) return;
-    S.pendingPlan = plan || null; setMode('signin'); authErr('');
-    authEl.querySelector('#pd-auth-sub').textContent = plan
-      ? 'Your account saves your purchase so you can unlock the Q-Bank on any device. The free 50 questions never need an account.'
-      : 'Already purchased? Sign in with the same account you used to buy and your access is restored automatically. No new payment is needed.';
-    authEl.classList.add('open'); document.body.style.overflow = 'hidden';
-    setTimeout(function () { authEl.querySelector('#pd-email').focus(); }, 50);
+    S.pendingPlan = plan || null;
+    PDX.openAuth({
+      mode: mode || 'signin',
+      titleSignin: plan ? 'Sign in to purchase' : 'Sign in',
+      titleSignup: plan ? 'Create an account to purchase' : 'Create your account',
+      noteSignin: plan ? 'Your account saves your purchase so you can unlock the Q-Bank on any device. The free 50 questions never need an account.'
+                       : 'Already purchased? Sign in with the same account you used to buy and your access is restored automatically. No new payment is needed.',
+      noteSignup: 'Your account saves your purchase so you can unlock the Q-Bank on any device. The free 50 questions never need an account.',
+      google: true, minPw: 6,
+      onGoogle: function () { return auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(fail); },
+      onForgot: function (em) { return auth.sendPasswordResetEmail(em).then(function () { return 'If an account exists for that email, a reset link is on its way. If you don\'t see it within a few minutes, please check your Junk or Spam folder.'; }, fail); },
+      onSubmit: function (d) { return (d.mode === 'signin' ? auth.signInWithEmailAndPassword(d.email, d.password) : auth.createUserWithEmailAndPassword(d.email, d.password)).catch(fail); },
+      onClose: function () { S.pendingPlan = null; }
+    });
   }
-  function closeSignIn() { authEl.classList.remove('open'); document.body.style.overflow = ''; }
-  authEl.addEventListener('click', function (e) {
-    if (e.target === authEl) { S.pendingPlan = null; closeSignIn(); return; }
-    var a = e.target.getAttribute && e.target.getAttribute('data-a'); if (!a) return;
-    if (a === 'close') { S.pendingPlan = null; closeSignIn(); }
-    else if (a === 'toggle') { setMode(mode === 'signin' ? 'create' : 'signin'); authErr(''); }
-    else if (a === 'google') {
-      authErr(''); auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(function (er) { authErr(friendly(er)); });
-    } else if (a === 'reset') {
-      var em = authEl.querySelector('#pd-email').value.trim();
-      if (!em) { authErr('Enter your email above, then choose "Forgot password?".'); return; }
-      auth.sendPasswordResetEmail(em).then(function () { authInfo('If an account exists for that email, a reset link is on its way. If you don\'t see it within a few minutes, please check your Junk or Spam folder.'); }).catch(function (er) { authErr(friendly(er)); });
-    }
-  });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && authEl.classList.contains('open')) { S.pendingPlan = null; closeSignIn(); } });
-  authEl.querySelector('#pd-auth-form').addEventListener('submit', function (e) {
-    e.preventDefault(); authErr('');
-    var em = authEl.querySelector('#pd-email').value.trim(), pw = authEl.querySelector('#pd-pass').value;
-    var btn = authEl.querySelector('#pd-auth-submit'); btn.disabled = true;
-    var p = mode === 'signin' ? auth.signInWithEmailAndPassword(em, pw) : auth.createUserWithEmailAndPassword(em, pw);
-    p.catch(function (er) { authErr(friendly(er)); }).then(function () { btn.disabled = false; });
-  });
+  function closeSignIn() { PDX.close(); }
 
   /* ---------- checkout ---------- */
   function startCheckout(plan) {
@@ -2554,22 +2860,59 @@ window.PharmDigit = (function () {
       if (entActive(S.ent)) { S.waitingPayment = false; banner('✓ Payment received. Your access is active: <strong>' + esc(entLabel()) + '</strong>. Thank you!', 'info', 10000); }
       else if (S.authReady && !S.user) { banner('Payment received. Please <a href="#" onclick="PharmDigit.ui.openSignIn();return false;">sign in</a> with the account you used to purchase to unlock access.', 'warn'); }
     }
+    refreshAccountViews();
     PD.notify('access');
   }
 
   /* ---------- adapters ---------- */
   function currentUser() { return S.user ? { uid: S.user.uid, email: S.user.email } : null; }
+  /* ---------- account button, account dialog, days remaining (shared PharmDigit design) ---------- */
+  function expMs() { var e = S.ent; return e && e.expiresAt && typeof e.expiresAt.toMillis === 'function' ? e.expiresAt.toMillis() : null; }
+  function acctState() {
+    if (!S.user) return 'free';
+    if (S.entError) return 'error';
+    if (!S.entLoaded) return 'checking';
+    if (entActive(S.ent)) return 'active';
+    if (S.ent && S.ent.planType === 'semester' && expMs()) return 'expired';
+    return 'free';
+  }
+  function acctInfo() {
+    return { ready: S.authReady, signedIn: !!S.user, state: acctState(), plan: S.ent && S.ent.planType, expiresAt: expMs(),
+      semName: '6-Month', termDays: 183,
+      freeText: acctState() === 'expired' ? 'The first 50 questions stay free. Choose a plan to unlock all 1,200 again.' : 'The first 50 questions are free. A plan unlocks all 1,200 questions.',
+      errorText: 'Check your connection, then select Try again. If you have paid and this continues, email ' + SUPPORT_EMAIL + '.' };
+  }
+  var acctBox = null;
+  function renderAcct() {
+    var b = acctBox; if (!b || !document.body.contains(b)) return;
+    if (!enabled || !S.authReady) { b.innerHTML = ''; return; }
+    var l = PDX.label(acctInfo());
+    b.innerHTML = '<button class="acct-btn' + (l.pro ? ' pro' : '') + (l.expired ? ' hot' : '') + '" type="button" aria-label="' + esc(l.aria) + '" title="' + esc(S.user ? 'Signed in as ' + (S.user.email || 'your account') : 'Sign in to restore a purchase') + '">' + PDX.buttonHTML(l) + '</button>';
+    b.firstChild.addEventListener('click', function () { if (S.user) openAccount(); else openSignIn(null); });
+  }
+  function goPlans() { if (typeof navigate === 'function') navigate('qbank/plans'); }
+  function openAccount() {
+    if (!S.user) return openSignIn(null);
+    var a = acctInfo(), st = a.state, acts = [];
+    if (st === 'error') acts.push({ label: 'Try again', primary: true, onClick: function () { watchEntitlement(S.user.uid); PDX.close(); PDX.toast('Checking your plan…'); } });
+    else if (st !== 'active' && st !== 'checking') acts.push({ label: st === 'expired' ? 'Renew access' : 'See plans', primary: true, onClick: function () { PDX.close(); goPlans(); } });
+    acts.push({ label: 'Sign out', id: 'pdx-signout', onClick: function () { PDX.close(); PD.ui.signOut(); } });
+    PDX.openAccount({
+      email: S.user.email || 'your account',
+      status: PDX.passStatus({ state: st, plan: a.plan, expiresAt: a.expiresAt, semName: '6-Month Access', lifeName: 'Lifetime Access', termDays: 183, freeText: a.freeText, errorText: a.errorText }),
+      actions: acts,
+      note: 'Your access is stored with your account and works on any device where you sign in. Quiz progress is saved on each device separately.'
+    });
+  }
+  function refreshAccountViews() { renderAcct(); if (PDX.isOpen('account')) openAccount(); }
+
   PD.ui = {
     openSignIn: function () { openSignIn(null); },
-    signOut: function () { if (auth) auth.signOut(); },
+    signOut: function () { if (auth) auth.signOut().then(function () { PDX.toast('Signed out. The first 50 questions remain free.'); }); },
     notice: function (t) { banner(esc(t), 'info', 5000); },
-    navAccount: function () {
-      if (!enabled || !S.authReady) return null;
-      if (!S.user) return { status: '', ok: false, btn: 'Sign in', action: 'PharmDigit.ui.openSignIn()', title: 'Sign in to restore a purchase' };
-      var paid = S.entLoaded && entActive(S.ent);
-      return { status: S.entError ? 'Plan unavailable' : (!S.entLoaded ? 'Checking plan…' : (paid ? '✓ ' + (S.ent.planType === 'lifetime' ? 'Lifetime' : '6-Month') + ' access' : 'Free plan')), ok: paid,
-               btn: 'Sign out', action: 'PharmDigit.ui.signOut()', title: 'Signed in as ' + (S.user.email || 'your account') };
-    },
+    mountAccountButton: function (box) { acctBox = box; renderAcct(); },
+    openAccount: openAccount,
+    navAccount: function () { return null; },
     accountLine: function () {
       if (!enabled) return '';
       var st = 'font-size:.78rem;color:var(--muted);text-align:center;margin:10px 0 0;';
@@ -2577,14 +2920,14 @@ window.PharmDigit = (function () {
       if (!S.user) return '<p style="' + st + '">Already purchased? <a href="#" onclick="PharmDigit.ui.openSignIn();return false;">Sign in</a> to restore access. An account is only needed to purchase or restore a purchase.</p>';
       return '<p style="' + st + '">Signed in as <strong>' + esc(S.user.email || 'your account') + '</strong> &middot; ' +
         (S.entError ? 'could not check your plan right now' : (S.entLoaded ? esc(entLabel()) : 'checking your plan…')) +
-        ' &middot; <a href="#" onclick="PharmDigit.ui.signOut();return false;">Sign out</a></p>';
+        ' &middot; <a href="#" onclick="PharmDigit.ui.openAccount();return false;">Account</a> &middot; <a href="#" onclick="PharmDigit.ui.signOut();return false;">Sign out</a></p>';
     }
   };
 
   if (!enabled) { return; }   // adapter stays off until the Firebase config is pasted above
 
-  firebase.initializeApp(FIREBASE_CONFIG);
-  auth = firebase.auth(); db = firebase.firestore();
+  var fbApp = PDX.firebaseApp(firebase, FIREBASE_CONFIG, 'qbank');   // own sign-in session, separate from the other PharmDigit apps
+  auth = fbApp.auth(); db = fbApp.firestore();
 
   PD.use({
     auth: { isEnabled: function () { return true; }, getUser: currentUser, signIn: function () { openSignIn(null); return Promise.resolve(); }, signOut: function () { return auth.signOut(); } },
@@ -2599,13 +2942,22 @@ window.PharmDigit = (function () {
   auth.onAuthStateChanged(function (user) {
     S.user = user; S.authReady = true;
     watchEntitlement(user ? user.uid : null);
-    if (user && authEl.classList.contains('open')) {
-      closeSignIn();
+    if (user && PDX.isOpen('auth')) {
       var plan = S.pendingPlan; S.pendingPlan = null;
+      closeSignIn();
       if (plan) { S.afterEnt = plan; banner('Checking your account…', 'info'); }
       else { S.welcome = true; }
     }
     changed();
+  });
+
+
+  /* keep "days remaining" current while the page stays open; re-render when a 6-Month pass ends */
+  var lastActive = null, lastDays = null;
+  PDX.every(function () {
+    var act = !!(S.user && S.entLoaded && entActive(S.ent)), d = act && expMs() ? PDX.daysLeft(expMs()) : null;
+    if (lastActive !== null && (act !== lastActive || d !== lastDays)) PD.notify('access'); else renderAcct();
+    lastActive = act; lastDays = d;
   });
 
   /* ---------- return from Stripe Checkout (?payment=success|cancelled) ---------- */
@@ -3005,11 +3357,8 @@ window.__QUESTIONS__ = [{"id":"ointments_1","topicId":"ointments","topicName":"O
       });
       nav.appendChild(b);
     });
-    var ui = window.PharmDigit && window.PharmDigit.ui, a = ui && ui.navAccount ? ui.navAccount() : null;
-    if (a) {
-      nav.appendChild(el('<div class="acct">' + (a.status ? '<span class="acct-status' + (a.ok ? ' ok' : '') + '">' + esc(a.status) + '</span>' : '') +
-        '<button class="acct-btn" title="' + esc(a.title) + '" onclick="' + a.action + '">' + esc(a.btn) + '</button></div>'));
-    }
+    var ui = window.PharmDigit && window.PharmDigit.ui;
+    if (ui && ui.mountAccountButton) { var acctBox = el('<div class="acct"></div>'); nav.appendChild(acctBox); ui.mountAccountButton(acctBox); }
   }
 
   function navigate(r) {
