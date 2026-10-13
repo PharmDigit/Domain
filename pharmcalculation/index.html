@@ -689,21 +689,22 @@ window.PDX = window.PDX || (function () {
 
   /* ---------- one sign-in session per app ----------
      A named Firebase app keeps its own sign-in session, so signing in or out of one PharmDigit app
-     does not sign anyone in or out of another. Same Firebase project, same accounts, same passes.
-     Once per app and browser, a session left in the old shared (default) app is copied over, so
-     students who were already signed in stay signed in after this update. */
+     never signs anyone in or out of another. Same Firebase project and accounts; passes stay per app.
+     Once per app and browser (v2): the old shared (default) session is cleared and this app's own
+     session is reset, so a sign-in that an earlier version copied between apps cannot linger.
+     Nothing is ever copied from one app's session to another. */
   function firebaseApp(fb, config, name) {
     var app = fb.apps.filter(function (a) { return a.name === name; })[0] || fb.initializeApp(config, name);
-    var key = 'pd_auth_split_' + name, done = true;
+    var key = 'pd_auth_sep_v2_' + name, done = true;
     try { done = localStorage.getItem(key) === '1'; if (!done) localStorage.setItem(key, '1'); } catch (e) { done = true; }
     if (!done) {
+      var clear = function (auth) {
+        var un = auth.onAuthStateChanged(function (u) { un(); if (u) auth.signOut().catch(function () {}); });
+      };
+      try { clear(app.auth()); } catch (e) { console.warn(e); }
       try {
         var def = fb.apps.filter(function (a) { return a.name === '[DEFAULT]'; })[0] || fb.initializeApp(config);
-        var first = function (auth) { return new Promise(function (res) { var un = auth.onAuthStateChanged(function (u) { un(); res(u); }); }); };
-        var mine = app.auth();
-        Promise.all([first(def.auth()), first(mine)]).then(function (r) {
-          if (r[0] && !r[1] && typeof mine.updateCurrentUser === 'function') return mine.updateCurrentUser(r[0]);
-        }).catch(function (e) { console.warn('PharmDigit: could not carry over the previous sign-in', e); });
+        clear(def.auth());
       } catch (e) { console.warn(e); }
     }
     return app;

@@ -1115,6 +1115,9 @@ footer { background: var(--gray-900); color: rgba(255,255,255,.5); padding: 56px
 .solution-card .solution-goal strong { color: var(--teal); }
 .solution-link { display: inline-block; margin-top: 16px; font-size: 14px; font-weight: 600; color: var(--teal); text-decoration: none; }
 .approach-grid.five { grid-template-columns: repeat(5,1fr); gap: 20px; }
+.app-icon { width: 64px; height: 64px; border-radius: 14px; background: #fff; border: 1px solid var(--gray-200); padding: 6px; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 18px; flex-shrink: 0; }
+.app-icon img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.solution-card .app-icon, .value-card .app-icon { width: 84px; height: 84px; padding: 4px; }
 @media (max-width:1024px) {
   .approach-grid.five { grid-template-columns: repeat(2,1fr); }
   .values-grid.three { grid-template-columns: 1fr; }
@@ -1559,9 +1562,9 @@ footer { background: var(--gray-900); color: rgba(255,255,255,.5); padding: 56px
       <div class="values-section reveal" style="margin-bottom:72px">
         <h2>Three Learning Tools. One Shared Mission.</h2>
         <div class="values-grid three">
-          <div class="value-card"><div class="value-card-icon">💊</div><h4>PharmDosage &mdash; Mastering Dosage Forms</h4><p>Build a strong foundation in pharmaceutical dosage forms, including tablets, capsules, injections, suppositories, and other drug delivery systems. Practice essential concepts and apply your knowledge to pharmacy-related questions and cases.</p><a class="value-link" href="/dosage-forms-qbank" onclick="navigate('qbank');return false;">Explore PharmDosage &rarr;</a></div>
-          <div class="value-card"><div class="value-card-icon">🧮</div><h4>PharmCalculation &mdash; Building Confidence in Pharmaceutical Calculations</h4><p>Develop accuracy and confidence in pharmaceutical calculations through guided practice, applied problems, and opportunities to understand and correct common mistakes. Strengthen the calculation skills essential for pharmacy coursework, examinations, and professional practice.</p><a class="value-link" href="/pharmcalculation/">Explore PharmCalculation &rarr;</a></div>
-          <div class="value-card"><div class="value-card-icon">📈</div><h4>PharmPK &mdash; Understanding Pharmacokinetics and Drug Dosing</h4><p>Explore the principles of pharmacokinetics and their application to clinical decision-making. Practice concepts involving drug absorption, distribution, metabolism, and excretion (ADME), concentration&ndash;time relationships, half-life, clearance, volume of distribution, and individualized drug dosing.</p><a class="value-link" href="/pharmpk/">Explore PharmPK &rarr;</a></div>
+          <div class="value-card"><div class="app-icon"><span class="dflogo" role="img" aria-label="PharmDosage logo"></span></div><h4>PharmDosage &mdash; Mastering Dosage Forms</h4><p>Build a strong foundation in pharmaceutical dosage forms, including tablets, capsules, injections, suppositories, and other drug delivery systems. Practice essential concepts and apply your knowledge to pharmacy-related questions and cases.</p><a class="value-link" href="/dosage-forms-qbank" onclick="navigate('qbank');return false;">Explore PharmDosage &rarr;</a></div>
+          <div class="value-card"><div class="app-icon"><img src="/images/pharmcalculation-icon.png" alt="PharmCalculation logo" width="64" height="64" loading="lazy" /></div><h4>PharmCalculation &mdash; Building Confidence in Pharmaceutical Calculations</h4><p>Develop accuracy and confidence in pharmaceutical calculations through guided practice, applied problems, and opportunities to understand and correct common mistakes. Strengthen the calculation skills essential for pharmacy coursework, examinations, and professional practice.</p><a class="value-link" href="/pharmcalculation/">Explore PharmCalculation &rarr;</a></div>
+          <div class="value-card"><div class="app-icon"><img src="/images/pharmpk-icon.png" alt="PharmPK logo" width="64" height="64" loading="lazy" /></div><h4>PharmPK &mdash; Understanding Pharmacokinetics and Drug Dosing</h4><p>Explore the principles of pharmacokinetics and their application to clinical decision-making. Practice concepts involving drug absorption, distribution, metabolism, and excretion (ADME), concentration&ndash;time relationships, half-life, clearance, volume of distribution, and individualized drug dosing.</p><a class="value-link" href="/pharmpk/">Explore PharmPK &rarr;</a></div>
         </div>
       </div>
 
@@ -1666,7 +1669,7 @@ footer { background: var(--gray-900); color: rgba(255,255,255,.5); padding: 56px
       </div>
       <div class="features-grid">
         <div class="feature-card solution-card reveal">
-          <div class="feature-icon">💊</div>
+          <div class="app-icon"><span class="dflogo" role="img" aria-label="PharmDosage logo"></span></div>
           <h3>1. PharmDosage: Understanding Pharmaceutical Dosage Forms</h3>
           <p class="solution-lead">Learn the science and principles behind the dosage forms used in modern medicine.</p>
           <p>Our dosage forms learning tool helps students review essential pharmaceutical concepts, explore formulation characteristics, and apply their knowledge through practice questions, clinical and pharmaceutical scenarios, and knowledge assessments.</p>
@@ -1681,7 +1684,7 @@ footer { background: var(--gray-900); color: rgba(255,255,255,.5); padding: 56px
           <a class="solution-link" href="/dosage-forms-qbank" onclick="navigate('qbank');return false;">Explore PharmDosage &rarr;</a>
         </div>
         <div class="feature-card solution-card reveal">
-          <div class="feature-icon">🧮</div>
+          <div class="app-icon"><img src="/images/pharmcalculation-icon.png" alt="PharmCalculation logo" width="64" height="64" loading="lazy" /></div>
           <h3>2. PharmCalculation: Developing Calculation Accuracy and Confidence</h3>
           <p class="solution-lead">Pharmaceutical calculations are essential to pharmacy education and professional practice. Accuracy, careful reasoning, and selecting the correct formula are critical skills.</p>
           <p>PharmCalculation provides opportunities to practice calculation problems, reinforce mathematical principles, and develop a systematic approach to solving pharmacy-related problems.</p>
@@ -1696,7 +1699,7 @@ footer { background: var(--gray-900); color: rgba(255,255,255,.5); padding: 56px
           <a class="solution-link" href="/pharmcalculation/">Explore PharmCalculation &rarr;</a>
         </div>
         <div class="feature-card solution-card reveal">
-          <div class="feature-icon">📈</div>
+          <div class="app-icon"><img src="/images/pharmpk-icon.png" alt="PharmPK logo" width="64" height="64" loading="lazy" /></div>
           <h3>3. PharmPK: Connecting Pharmacokinetics with Drug Dosing</h3>
           <p class="solution-lead">Pharmacokinetics helps explain what the body does to a drug and how drug concentrations change over time. Understanding these principles is essential for studying drug disposition and individualized dosing.</p>
           <p>PharmPK helps students explore pharmacokinetic concepts through focused questions and application-based learning.</p>
@@ -2728,21 +2731,22 @@ window.PDX = window.PDX || (function () {
 
   /* ---------- one sign-in session per app ----------
      A named Firebase app keeps its own sign-in session, so signing in or out of one PharmDigit app
-     does not sign anyone in or out of another. Same Firebase project, same accounts, same passes.
-     Once per app and browser, a session left in the old shared (default) app is copied over, so
-     students who were already signed in stay signed in after this update. */
+     never signs anyone in or out of another. Same Firebase project and accounts; passes stay per app.
+     Once per app and browser (v2): the old shared (default) session is cleared and this app's own
+     session is reset, so a sign-in that an earlier version copied between apps cannot linger.
+     Nothing is ever copied from one app's session to another. */
   function firebaseApp(fb, config, name) {
     var app = fb.apps.filter(function (a) { return a.name === name; })[0] || fb.initializeApp(config, name);
-    var key = 'pd_auth_split_' + name, done = true;
+    var key = 'pd_auth_sep_v2_' + name, done = true;
     try { done = localStorage.getItem(key) === '1'; if (!done) localStorage.setItem(key, '1'); } catch (e) { done = true; }
     if (!done) {
+      var clear = function (auth) {
+        var un = auth.onAuthStateChanged(function (u) { un(); if (u) auth.signOut().catch(function () {}); });
+      };
+      try { clear(app.auth()); } catch (e) { console.warn(e); }
       try {
         var def = fb.apps.filter(function (a) { return a.name === '[DEFAULT]'; })[0] || fb.initializeApp(config);
-        var first = function (auth) { return new Promise(function (res) { var un = auth.onAuthStateChanged(function (u) { un(); res(u); }); }); };
-        var mine = app.auth();
-        Promise.all([first(def.auth()), first(mine)]).then(function (r) {
-          if (r[0] && !r[1] && typeof mine.updateCurrentUser === 'function') return mine.updateCurrentUser(r[0]);
-        }).catch(function (e) { console.warn('PharmDigit: could not carry over the previous sign-in', e); });
+        clear(def.auth());
       } catch (e) { console.warn(e); }
     }
     return app;
