@@ -389,7 +389,7 @@ footer{max-width:1120px;margin:0 auto;padding-inline:16px;padding-block:0 40px;c
       <b>PharmPK</b>
     </button>
     <nav class="nav" id="nav" aria-label="Sections"></nav>
-    <button class="btn sm acctbtn" id="acctbtn" aria-label="Sign in"><span>Sign in</span></button>
+    <button class="btn sm acctbtn" id="acctbtn" aria-label="Get started"><span>Get started</span></button>
     <button class="btn sm manbtn" id="manbtn" aria-label="Open user manual" title="User Manual"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.2c1.8-.6 3.6-.5 5.5.6v9.4c-1.9-1.1-3.7-1.2-5.5-.6zM13.5 3.2c-1.8-.6-3.6-.5-5.5.6v9.4c1.9-1.1 3.7-1.2 5.5-.6z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg><span>User Manual</span></button>
   </div>
 </header>
@@ -1824,6 +1824,421 @@ CASES.push(
 );
 CASES.sort((a,b) => TOPICS.findIndex(t => t.id === a.t) - TOPICS.findIndex(t => t.id === b.t));
 
+/* PharmDigit shared account UI (identical in all four apps) */
+window.PDX = window.PDX || (function () {
+  'use strict';
+  var cfg = { accent: '#b85c00', accentInk: '#ffffff', font: 'inherit', display: 'inherit', z: 3000, dark: [] };
+  var scrim = null, box = null, current = null, lastFocus = null, onClose = null, toastT = null;
+  var DAY = 864e5;
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function $(sel, r) { return (r || document).querySelector(sel); }
+  function $$(sel, r) { return Array.prototype.slice.call((r || document).querySelectorAll(sel)); }
+  function fmtDate(ms) { return new Date(ms).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); }
+  function daysLeft(ms) { return ms == null ? null : Math.max(0, Math.ceil((ms - Date.now()) / DAY)); }
+  function plural(n, w) { return n + ' ' + w + (n === 1 ? '' : 's'); }
+
+  var USER_IC = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>';
+  var G_IC = '<svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>';
+
+  /* ---------- styles (scoped to .pdx-*) ---------- */
+  var LIGHT = '--pdx-bg:#f5f6f8;--pdx-surface:#fff;--pdx-sunk:#eceef2;--pdx-line:#d9dde4;--pdx-line-strong:#bcc3ce;--pdx-fg:#18202c;--pdx-muted:#5a6475;' +
+    '--pdx-ok:#1e7a4c;--pdx-ok-soft:#e2f3ea;--pdx-bad:#b3261e;--pdx-bad-soft:#fbe7e5;--pdx-hint:#4a4fb3;--pdx-hint-soft:#e9eafb;--pdx-warn-soft:#fdf3d8;';
+  var DARK = '--pdx-bg:#0f141b;--pdx-surface:#161d27;--pdx-sunk:#1c2532;--pdx-line:#2a3544;--pdx-line-strong:#3b4859;--pdx-fg:#e7ebf1;--pdx-muted:#a3adbd;' +
+    '--pdx-ok:#5cc98f;--pdx-ok-soft:#14291e;--pdx-bad:#ff8a80;--pdx-bad-soft:#331a19;--pdx-hint:#a9adff;--pdx-hint-soft:#1f2140;--pdx-warn-soft:#2e2611;';
+  function buildCss() {
+    var S = '.pdx-scrim,.pdx-toast';
+    var css =
+      S + '{' + LIGHT + '--pdx-accent:' + cfg.accent + ';--pdx-accent-ink:' + cfg.accentInk + ';--pdx-font:' + cfg.font + ';--pdx-display:' + cfg.display + '}' +
+      '.pdx-scrim{position:fixed;inset:0;z-index:' + cfg.z + ';background:rgba(10,14,20,.55);display:grid;place-items:center;padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));overflow-y:auto;font-family:var(--pdx-font);-webkit-font-smoothing:antialiased}' +
+      '.pdx-scrim[hidden]{display:none}' +
+      '.pdx-box{position:relative;box-sizing:border-box;background:var(--pdx-surface);color:var(--pdx-fg);border:1px solid var(--pdx-line);border-radius:14px;width:min(460px,100%);padding:24px;display:grid;gap:14px;box-shadow:0 20px 50px rgba(0,0,0,.3);max-height:calc(100vh - 32px);overflow-y:auto;font:400 15px/1.55 var(--pdx-font);text-align:left;margin:0}' +
+      '.pdx-box *{box-sizing:border-box}' +
+      '.pdx-box h2{font:700 1.6rem/1.15 var(--pdx-display);letter-spacing:-.01em;margin:0;padding:0 30px 0 0;color:var(--pdx-fg);text-wrap:balance}' +
+      '.pdx-box p{margin:0;padding:0}.pdx-box b,.pdx-box strong{font-weight:700}' +
+      '.pdx-box a{color:var(--pdx-accent);text-decoration:underline}' +
+      '.pdx-small{font-size:.86rem}.pdx-muted{color:var(--pdx-muted)}' +
+      '.pdx-x{position:absolute;top:10px;right:12px;background:none;border:0;font:400 1.5rem/1 var(--pdx-font);color:var(--pdx-muted);cursor:pointer;padding:4px 8px;margin:0;border-radius:6px;width:auto;min-height:0}' +
+      '.pdx-x:hover{background:var(--pdx-sunk);color:var(--pdx-fg)}' +
+      '.pdx-seg{display:flex;border:1px solid var(--pdx-line-strong);border-radius:6px;overflow:hidden;margin:0}' +
+      '.pdx-seg button{border:0;border-radius:0;background:var(--pdx-surface);padding:7px 12px;margin:0;font:600 .85rem/1.4 var(--pdx-font);cursor:pointer;color:var(--pdx-muted);width:auto;min-height:0;box-shadow:none}' +
+      '.pdx-seg button+button{border-left:1px solid var(--pdx-line-strong)}' +
+      '.pdx-seg button[aria-pressed="true"]{background:var(--pdx-fg);color:var(--pdx-surface)}' +
+      '.pdx-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:6px;padding:9px 16px;margin:0;font:600 .92rem/1.4 var(--pdx-font);border:1px solid var(--pdx-line-strong);background:var(--pdx-surface);color:var(--pdx-fg);cursor:pointer;text-decoration:none;width:auto;min-height:40px;box-shadow:none;text-transform:none;letter-spacing:normal}' +
+      '.pdx-btn:hover{border-color:var(--pdx-fg)}' +
+      '.pdx-btn.primary{background:var(--pdx-accent);border-color:var(--pdx-accent);color:var(--pdx-accent-ink)}.pdx-btn.primary:hover{filter:brightness(1.06)}' +
+      '.pdx-btn.ghost{border-color:transparent;background:transparent;color:var(--pdx-muted)}.pdx-btn.ghost:hover{background:var(--pdx-sunk);color:var(--pdx-fg)}' +
+      '.pdx-btn.block{width:100%}.pdx-btn:disabled{opacity:.45;cursor:not-allowed}' +
+      '.pdx-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}' +
+      '.pdx-or{display:flex;align-items:center;gap:10px;color:var(--pdx-muted);font-size:.8rem}.pdx-or::before,.pdx-or::after{content:"";flex:1;border-top:1px solid var(--pdx-line)}' +
+      '.pdx-form{display:grid;gap:10px;margin:0}' +
+      '.pdx-field{display:grid;gap:4px;min-width:0}' +
+      '.pdx-field label{font:600 .76rem/1.4 var(--pdx-font);color:var(--pdx-muted);text-transform:uppercase;letter-spacing:.06em;margin:0;padding:0}' +
+      '.pdx-field input{display:block;padding:9px 10px;margin:0;border:1px solid var(--pdx-line-strong);border-radius:6px;background:var(--pdx-bg);color:var(--pdx-fg);width:100%;font:400 16px/1.4 var(--pdx-font);min-height:42px;box-shadow:none}' +
+      '.pdx-field input:focus{outline:2px solid var(--pdx-accent);outline-offset:1px}' +
+      '.pdx-err{color:var(--pdx-bad);font-size:.86rem}.pdx-err.info{color:var(--pdx-ok)}.pdx-err:empty{display:none}' +
+      '.pdx-fb{border-radius:10px;padding:12px 14px;display:grid;gap:6px;font-size:.92rem;border:1px solid;margin:0}' +
+      '.pdx-fb.ok{background:var(--pdx-ok-soft);border-color:color-mix(in srgb,var(--pdx-ok) 40%,transparent)}' +
+      '.pdx-fb.bad{background:var(--pdx-bad-soft);border-color:color-mix(in srgb,var(--pdx-bad) 40%,transparent)}' +
+      '.pdx-fb.hint{background:var(--pdx-hint-soft);border-color:color-mix(in srgb,var(--pdx-hint) 40%,transparent)}' +
+      '.pdx-fb .ttl{font-weight:700}' +
+      '.pdx-meter{height:6px;border-radius:3px;background:color-mix(in srgb,var(--pdx-ok) 18%,transparent);overflow:hidden}.pdx-meter i{display:block;height:100%;background:var(--pdx-ok);border-radius:3px}' +
+      '.pdx-meter.low i{background:var(--pdx-bad)}' +
+      '.pdx-note{background:var(--pdx-warn-soft);border-radius:8px;padding:8px 10px;font-size:.84rem}' +
+      '.pdx-tools{border:1px dashed var(--pdx-line-strong);border-radius:6px;padding:10px 12px;display:grid;gap:8px}.pdx-tools summary{cursor:pointer;font-weight:600;font-size:.86rem}' +
+      '.pdx-check{display:flex;gap:10px;align-items:flex-start;font-size:.86rem}.pdx-check input{margin-top:3px;flex:none;width:auto;min-height:0}' +
+      '.pdx-opts{display:grid;gap:10px;margin:0}' +
+      '.pdx-opt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--pdx-surface);border:1.5px solid var(--pdx-line);border-radius:12px;padding:12px 14px;margin:0;color:var(--pdx-fg);font:inherit;cursor:pointer;min-height:0;box-shadow:none;text-transform:none;letter-spacing:normal}' +
+      '.pdx-opt:hover,.pdx-opt:focus-visible{border-color:var(--pdx-accent)}' +
+      '.pdx-opt b{display:block;font-size:1rem}.pdx-opt small{display:block;color:var(--pdx-muted);font-size:.84rem;line-height:1.4;margin-top:2px}' +
+      '.pdx-opt .pdx-oic{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--pdx-sunk);color:var(--pdx-accent)}' +
+      '.pdx-opt.primary{border-color:var(--pdx-accent)}.pdx-opt.primary .pdx-oic{background:var(--pdx-accent);color:var(--pdx-accent-ink)}' +
+      '.pdx-sel{display:flex;justify-content:space-between;gap:10px;background:var(--pdx-sunk);border:1px solid var(--pdx-line);border-radius:10px;padding:10px 12px;font-size:.92rem}' +
+      '.pdx-legal{max-height:min(46vh,380px);overflow-y:auto;border:1px solid var(--pdx-line);border-radius:10px;padding:12px 14px;background:var(--pdx-bg);font-size:.88rem;display:grid;gap:8px}' +
+      '.pdx-legal h4{margin:4px 0 0;font:700 .8rem/1.3 var(--pdx-font);text-transform:uppercase;letter-spacing:.06em;color:var(--pdx-muted)}.pdx-legal ul{margin:0;padding-left:18px;display:grid;gap:4px}' +
+      '.pdx-linkrow{display:flex;flex-wrap:wrap;gap:4px 16px;justify-content:center}' +
+      '.pdx-link{background:none;border:0;padding:6px 0;margin:0;color:var(--pdx-accent);font:600 .9rem/1.3 var(--pdx-font);text-decoration:underline;cursor:pointer;width:auto;min-height:0;box-shadow:none}' +
+      '.pdx-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace!important;letter-spacing:.08em;text-transform:uppercase}' +
+      '.pdx-toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--pdx-fg);color:var(--pdx-surface);padding:10px 16px;border-radius:8px;font:500 .88rem/1.4 var(--pdx-font);z-index:' + (cfg.z + 10) + ';max-width:calc(100vw - 32px);box-shadow:0 8px 24px rgba(0,0,0,.25)}' +
+      '.pdx-toast[hidden]{display:none}' +
+      '.pdx-as{display:none}' +
+      '@media (max-width:520px){.pdx-box{padding:20px 18px}.pdx-box h2{font-size:1.4rem}.pdx-row .pdx-btn{flex:1 1 auto}}';
+    var dk = DARK + (cfg.darkAccent ? '--pdx-accent:' + cfg.darkAccent + ';--pdx-accent-ink:' + (cfg.darkAccentInk || '#000') + ';' : '');
+    (cfg.dark || []).forEach(function (sel) {
+      // 'auto' = follow the system setting unless the app forces light; otherwise a selector such as ':root[data-theme=dark]'
+      if (sel === 'auto') css += '@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pdx-scrim,:root:not([data-theme="light"]) .pdx-toast{' + dk + '}}';
+      else css += sel + ' .pdx-scrim,' + sel + ' .pdx-toast{' + dk + '}';
+    });
+    return css;
+  }
+  var styleEl = null;
+  function init(o) {
+    for (var k in o) cfg[k] = o[k];
+    if (!styleEl) { styleEl = document.createElement('style'); styleEl.id = 'pdx-style'; document.head.appendChild(styleEl); }
+    styleEl.textContent = buildCss();
+  }
+
+  /* ---------- modal shell ---------- */
+  function ensure() {
+    if (scrim) return;
+    if (!styleEl) init({});
+    scrim = document.createElement('div'); scrim.className = 'pdx-scrim'; scrim.hidden = true;
+    scrim.innerHTML = '<div class="pdx-box" role="dialog" aria-modal="true" aria-labelledby="pdx-title"><button class="pdx-x" type="button" aria-label="Close">&times;</button><div class="pdx-body" style="display:grid;gap:14px"></div></div>';
+    document.body.appendChild(scrim);
+    box = $('.pdx-box', scrim);
+    $('.pdx-x', scrim).addEventListener('click', function () { close(); });
+    scrim.addEventListener('mousedown', function (e) { if (e.target === scrim && !scrim._lock) close(); });
+    document.addEventListener('keydown', function (e) {
+      if (scrim.hidden) return;
+      if (e.key === 'Escape' && !scrim._lock) { e.stopPropagation(); close(); }
+      if (e.key === 'Tab') {                                   // keep focus inside the dialog
+        var f = $$('button,input,a[href],select,textarea,summary,[tabindex]:not([tabindex="-1"])', box).filter(function (x) { return !x.disabled && x.offsetParent !== null; });
+        if (!f.length) return;
+        if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+        else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+      }
+    }, true);
+  }
+  function modal(kind, html, mount, opts) {
+    ensure(); opts = opts || {};
+    if (scrim.hidden) lastFocus = document.activeElement;
+    current = kind; onClose = opts.onClose || null; scrim._lock = !!opts.lock;
+    $('.pdx-x', scrim).hidden = !!opts.lock;
+    $('.pdx-body', scrim).innerHTML = html;
+    scrim.hidden = false; document.documentElement.style.overflow = 'hidden';
+    if (mount) mount(box);
+    setTimeout(function () { var f = $('[autofocus]', box) || $('input,button:not(.pdx-x)', box); if (f) f.focus(); }, 30);
+  }
+  function close() {
+    if (!scrim || scrim.hidden) return;
+    scrim.hidden = true; document.documentElement.style.overflow = '';
+    var cb = onClose; current = null; onClose = null;
+    try { if (lastFocus && lastFocus.focus) lastFocus.focus(); } catch (e) {}
+    if (cb) cb();
+  }
+  function isOpen(kind) { return !!scrim && !scrim.hidden && (!kind || current === kind); }
+
+  function toast(msg, ms) {
+    var el = $('#pdx-toast');
+    if (!el) { if (!styleEl) init({}); el = document.createElement('div'); el.id = 'pdx-toast'; el.className = 'pdx-toast'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
+    el.textContent = msg; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(function () { el.hidden = true; }, ms || 3800);
+  }
+
+  /* ---------- sign in / create account ---------- */
+  var validEmail = function (e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); };
+  function openAuth(o) {
+    o = o || {};
+    var mode = o.mode === 'signup' ? 'signup' : 'signin', up = mode === 'signup', minPw = o.minPw || 6;
+    var note = up ? (o.noteSignup || o.note) : (o.noteSignin || o.note);
+    var field = function (id, label, type, ac, extra) { return '<div class="pdx-field"><label for="' + id + '">' + label + '</label><input id="' + id + '" type="' + type + '" autocomplete="' + ac + '"' + (extra || '') + '></div>'; };
+    modal('auth',
+      '<h2 id="pdx-title">' + esc(up ? (o.titleSignup || 'Create your account') : (o.titleSignin || 'Sign in')) + '</h2>' +
+      (note ? '<p class="pdx-small">' + esc(note) + '</p>' : '') +
+      '<div class="pdx-seg" role="group" aria-label="Account"><button type="button" data-pdx-mode="signin" aria-pressed="' + !up + '">Sign in</button><button type="button" data-pdx-mode="signup" aria-pressed="' + up + '">Create account</button></div>' +
+      (o.google ? '<button class="pdx-btn block" type="button" id="pdx-google">' + G_IC + 'Continue with Google</button><div class="pdx-or"><span>or</span></div>' : '') +
+      '<form class="pdx-form" id="pdx-auth" novalidate>' +
+        (up && o.nameField ? field('pdx-name', 'Name', 'text', 'name') : '') +
+        field('pdx-email', 'Email', 'email', 'email', ' inputmode="email" autocapitalize="off" spellcheck="false" required') +
+        field('pdx-pw', 'Password' + (up ? ' (' + minPw + ' characters or more)' : ''), 'password', up ? 'new-password' : 'current-password', ' required') +
+        (up ? field('pdx-pw2', 'Confirm password', 'password', 'new-password', ' required') : '') +
+        '<p class="pdx-err" id="pdx-aerr" role="alert"></p>' +
+        '<div class="pdx-row"><button class="pdx-btn primary" type="submit" id="pdx-go">' + (up ? 'Create account' : 'Sign in') + '</button>' +
+        (!up && o.onForgot ? '<button class="pdx-btn ghost" type="button" id="pdx-forgot">Forgot password?</button>' : '') + '</div>' +
+      '</form>' +
+      (up && o.termsHtml ? '<p class="pdx-small pdx-muted">' + o.termsHtml + '</p>' : '') +
+      (o.footHtml ? '<p class="pdx-small pdx-muted">' + o.footHtml + '</p>' : ''),
+      function (b) {
+        var er = $('#pdx-aerr', b);
+        var say = function (t, info) { er.textContent = t || ''; er.className = 'pdx-err' + (info ? ' info' : ''); };
+        if (o.email) $('#pdx-email', b).value = o.email;
+        $$('[data-pdx-mode]', b).forEach(function (x) {
+          x.addEventListener('click', function () { if (x.dataset.pdxMode === mode) return; var em = $('#pdx-email', b).value; openAuth(Object.assign({}, o, { mode: x.dataset.pdxMode, email: em })); });
+        });
+        var g = $('#pdx-google', b);
+        if (g) g.addEventListener('click', function () {
+          say(''); g.disabled = true;
+          Promise.resolve().then(o.onGoogle).then(function () { g.disabled = false; }, function (x) { g.disabled = false; say((x && x.message) || ''); });
+        });
+        var fg = $('#pdx-forgot', b);
+        if (fg) fg.addEventListener('click', function () {
+          var em = $('#pdx-email', b).value.trim();
+          if (!validEmail(em)) { say('Enter your email above, then select Forgot password.'); $('#pdx-email', b).focus(); return; }
+          fg.disabled = true;
+          Promise.resolve(o.onForgot(em)).then(function (msg) { fg.disabled = false; say(msg || 'If an account exists for that email, a reset link has been sent. Check your Junk or Spam folder if it does not arrive.', true); },
+            function (x) { fg.disabled = false; say((x && x.message) || 'Could not send the reset email.'); });
+        });
+        $('#pdx-auth', b).addEventListener('submit', function (e) {
+          e.preventDefault(); say('');
+          var name = up && o.nameField ? $('#pdx-name', b).value.trim() : '', email = $('#pdx-email', b).value.trim(), pw = $('#pdx-pw', b).value;
+          if (up && o.nameField && !name) return say('Enter your name.');
+          if (!validEmail(email)) return say('Enter a valid email address.');
+          if (!pw) return say('Enter your password.');
+          if (up && pw.length < minPw) return say('Use a password with at least ' + minPw + ' characters.');
+          if (up && pw !== $('#pdx-pw2', b).value) return say('Passwords do not match.');
+          var go = $('#pdx-go', b); go.disabled = true; go.textContent = up ? 'Creating account…' : 'Signing in…';
+          Promise.resolve().then(function () { return o.onSubmit({ mode: mode, name: name, email: email, password: pw }); }).then(function () {
+            if (isOpen('auth')) { go.disabled = false; go.textContent = up ? 'Create account' : 'Sign in'; }
+          }, function (x) { go.disabled = false; go.textContent = up ? 'Create account' : 'Sign in'; say((x && x.message) || 'Something went wrong. Try again.'); });
+        });
+        if (o.onMount) o.onMount(b);
+      }, { onClose: o.onClose });
+  }
+
+  /* ---------- account dialog ---------- */
+  // st: { kind:'ok'|'bad'|'hint', title, text, meter: 0..1|null, low:bool }
+  function statusCard(st) {
+    if (!st) return '';
+    return '<div class="pdx-fb ' + (st.kind || 'hint') + '"><span class="ttl">' + esc(st.title) + '</span>' +
+      (st.meter != null ? '<div class="pdx-meter' + (st.low ? ' low' : '') + '" role="img" aria-label="' + esc(st.title) + '"><i style="width:' + Math.max(2, Math.round(Math.min(1, st.meter) * 100)) + '%"></i></div>' : '') +
+      (st.text ? '<span>' + esc(st.text) + '</span>' : '') + '</div>';
+  }
+  function openAccount(o) {
+    o = o || {};
+    var acts = o.actions || [];
+    modal('account',
+      '<h2 id="pdx-title">' + esc(o.title || 'Your account') + '</h2>' +
+      (o.email ? '<p class="pdx-small pdx-muted">Signed in as <b>' + esc(o.email) + '</b></p>' : (o.signedOutText ? '<p class="pdx-small pdx-muted">' + esc(o.signedOutText) + '</p>' : '')) +
+      statusCard(o.status) +
+      (acts.length ? '<div class="pdx-row">' + acts.map(function (a, i) { return '<button class="pdx-btn' + (a.primary ? ' primary' : '') + (a.ghost ? ' ghost' : '') + '" type="button" data-pdx-act="' + i + '"' + (a.id ? ' id="' + a.id + '"' : '') + '>' + esc(a.label) + '</button>'; }).join('') + '</div>' : '') +
+      (o.note ? '<p class="pdx-small pdx-muted">' + esc(o.note) + '</p>' : '') +
+      (o.extraHtml || ''),
+      function (b) {
+        $$('[data-pdx-act]', b).forEach(function (x) { x.addEventListener('click', function () { var a = acts[+x.dataset.pdxAct]; if (a && a.onClick) a.onClick(x, b); }); });
+        if (o.onMount) o.onMount(b);
+      }, { onClose: o.onClose });
+  }
+
+  /* ---------- account button label ---------- */
+  // a: { ready, signedIn, state:'active'|'expired'|'free'|'checking'|'error', plan:'semester'|'lifetime', expiresAt, semName }
+  function label(a) {
+    if (!a.ready) return { long: '…', short: '', pro: false, aria: 'Checking your account' };
+    if (!a.signedIn) return { long: 'Get started', short: '', pro: false, aria: 'Get started: create an account or sign in' };
+    if (a.state === 'active' && a.plan === 'lifetime') return { long: 'Lifetime', short: '', pro: true, aria: 'Account: Lifetime access' };
+    if (a.state === 'active' && a.plan === 'beta') { var bd = daysLeft(a.expiresAt); return { long: 'Beta · ' + bd + 'd', short: bd + 'd', pro: true, aria: 'Account: beta access, ' + plural(bd, 'day') + ' remaining' }; }
+    if (a.state === 'expired' && a.plan === 'beta') return { long: 'Beta ended', short: '', pro: false, expired: true, aria: 'Account: your beta access has ended' };
+    if (a.state === 'active') { var d = daysLeft(a.expiresAt); return { long: (a.semName || 'Semester') + ' · ' + d + 'd', short: d + 'd', pro: true, aria: 'Account: ' + (a.semName || 'Semester') + ', ' + plural(d, 'day') + ' remaining' }; }
+    if (a.state === 'expired') return { long: 'Renew', short: '', pro: false, expired: true, aria: 'Account: your pass has expired' };
+    return { long: 'Account', short: '', pro: false, aria: 'Account' };
+  }
+  // short label first so a narrow-screen rule can show it and hide the long one: .pdx-as{display:inline} .pdx-as~.pdx-al{display:none}
+  function buttonHTML(l, icon) { return (icon === false ? '' : USER_IC) + (l.short ? '<span class="pdx-as">' + esc(l.short) + '</span>' : '') + '<span class="pdx-al">' + esc(l.long) + '</span>'; }
+
+  /* status card for the account dialog */
+  function passStatus(a) {
+    var sem = a.semName || 'Semester Pass';
+    if (a.state === 'error') return { kind: 'bad', title: 'We could not check your pass right now', text: a.errorText || 'Check your connection and try again.' };
+    if (a.state === 'checking') return { kind: 'hint', title: 'Checking your pass…', text: '' };
+    if (a.state === 'active' && a.plan === 'lifetime') return { kind: 'ok', title: a.lifeName || 'Lifetime Pass', text: 'Full access · no expiration' + (a.purchasedAt ? ' · purchased ' + fmtDate(a.purchasedAt) : '') };
+    if (a.state === 'active' && a.plan === 'beta') {
+      var bd = daysLeft(a.expiresAt);
+      return { kind: 'ok', title: 'Beta access · ' + plural(bd, 'day') + ' remaining', meter: bd / 60, low: bd <= 7, text: 'Free beta access until ' + fmtDate(a.expiresAt) + '. If you buy a Semester Pass, its 6 months start when beta access ends.' };
+    }
+    if (a.state === 'expired' && a.plan === 'beta') return { kind: 'bad', title: 'Beta access ended', text: 'Ended ' + fmtDate(a.expiresAt) + '. ' + (a.freeText || '') };
+    if (a.state === 'active') {
+      var d = daysLeft(a.expiresAt), term = a.termDays || 183;
+      return { kind: 'ok', title: sem + ' · ' + plural(d, 'day') + ' remaining', meter: d / term, low: d <= 14, text: 'Full access until ' + fmtDate(a.expiresAt) + (a.purchasedAt ? ' · first purchased ' + fmtDate(a.purchasedAt) : '') };
+    }
+    if (a.state === 'expired') return { kind: 'bad', title: sem + ' expired', text: 'Ended ' + fmtDate(a.expiresAt) + '. ' + (a.freeText || '') };
+    return { kind: 'hint', title: 'Free access', text: a.freeText || '' };
+  }
+
+  /* ---------- keep "days remaining" current ---------- */
+  var tickers = [];
+  function every(fn) {
+    tickers.push(fn);
+    if (tickers.length === 1) {
+      var run = function () { tickers.forEach(function (f) { try { f(); } catch (e) { console.error(e); } }); };
+      setInterval(run, 60000);
+      document.addEventListener('visibilitychange', function () { if (!document.hidden) run(); });
+      window.addEventListener('focus', run);
+    }
+  }
+
+  /* ---------- one sign-in session per app ----------
+     A named Firebase app keeps its own sign-in session, so signing in or out of one PharmDigit app
+     never signs anyone in or out of another. Same Firebase project and accounts; passes stay per app.
+     Once per app and browser (v2): the old shared (default) session is cleared and this app's own
+     session is reset, so a sign-in that an earlier version copied between apps cannot linger.
+     Nothing is ever copied from one app's session to another. */
+  function firebaseApp(fb, config, name) {
+    var app = fb.apps.filter(function (a) { return a.name === name; })[0] || fb.initializeApp(config, name);
+    var key = 'pd_auth_sep_v2_' + name, done = true;
+    try { done = localStorage.getItem(key) === '1'; if (!done) localStorage.setItem(key, '1'); } catch (e) { done = true; }
+    if (!done) {
+      var clear = function (auth) {
+        var un = auth.onAuthStateChanged(function (u) { un(); if (u) auth.signOut().catch(function () {}); });
+      };
+      try { clear(app.auth()); } catch (e) { console.warn(e); }
+      try {
+        var def = fb.apps.filter(function (a) { return a.name === '[DEFAULT]'; })[0] || fb.initializeApp(config);
+        clear(def.auth());
+      } catch (e) { console.warn(e); }
+    }
+    return app;
+  }
+
+  /* ================= v3: one flow for every PharmDigit app ================= */
+  var APPS_ALL = 'PharmDosage, PharmCalculation, PharmPK and PharmRx';
+  var CHK_IC = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>';
+  var KEY_IC = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2L20 3M16 7l3 3M14 9l2 2"/></svg>';
+
+  /* Get started: the single entry point for creating an account or signing in.
+     o: { app, freeText, plan:{name,price}, code, onChoose(mode), onPlans, onBeta } */
+  function getStarted(o) {
+    o = o || {};
+    var buying = !!o.plan, redeeming = !!o.code;
+    var opt = function (mode, cls, ic, t, s) { return '<button type="button" class="pdx-opt' + cls + '" data-pdx-gs="' + mode + '"><span class="pdx-oic">' + ic + '</span><span><b>' + t + '</b><small>' + s + '</small></span></button>'; };
+    modal('getstarted',
+      '<h2 id="pdx-title">' + (buying || redeeming ? 'Almost there' : 'Get started') + '</h2>' +
+      '<p class="pdx-small">' + esc(buying ? 'Your pass is saved to your account, so it works on any device and can be restored later.'
+        : redeeming ? 'Beta access is saved to your account, so it works on any device.'
+        : 'Create a free account or sign in. ' + (o.freeText || '')) + '</p>' +
+      (buying ? '<div class="pdx-sel"><span>Selected plan: <b>' + esc(o.plan.name) + '</b></span><b>' + esc(o.plan.price || '') + '</b></div>' : '') +
+      (redeeming ? '<div class="pdx-sel"><span>Beta code: <b class="pdx-code">' + esc(o.code) + '</b></span></div>' : '') +
+      '<div class="pdx-opts">' +
+        opt('signup', ' primary', USER_IC, 'Create a free account', 'New to ' + esc(o.app || 'PharmDigit') + '. Takes about a minute.') +
+        opt('signin', '', CHK_IC, 'Sign in', 'I already have an account, including from another PharmDigit app.') +
+      '</div>' +
+      '<div class="pdx-linkrow">' +
+        (!buying && !redeeming && o.onBeta ? '<button type="button" class="pdx-link" data-pdx-l="beta">Have a beta code?</button>' : '') +
+        (o.onPlans ? '<button type="button" class="pdx-link" data-pdx-l="plans">' + (buying ? 'Back to plans' : 'View plans and prices') + '</button>' : '') +
+      '</div>',
+      function (b) {
+        $$('[data-pdx-gs]', b).forEach(function (x) { x.addEventListener('click', function () { o.onChoose(x.dataset.pdxGs); }); });
+        $$('[data-pdx-l]', b).forEach(function (x) { x.addEventListener('click', function () { close(); (x.dataset.pdxL === 'beta' ? o.onBeta : o.onPlans)(); }); });
+      });
+  }
+
+  /* Purchase disclaimer: shown every time a purchase starts, after sign-in and before Stripe.
+     o: { app, plan:{name,price,term}, legalHtml, onAgree(), onBack } */
+  function disclaimer(o) {
+    o = o || {};
+    modal('disclaimer',
+      '<h2 id="pdx-title">Before you purchase</h2>' +
+      '<div class="pdx-sel"><span><b>' + esc(o.plan.name) + '</b>' + (o.plan.term ? ' · ' + esc(o.plan.term) : '') + '</span><b>' + esc(o.plan.price || '') + '</b></div>' +
+      '<p class="pdx-small">Please read and accept the following before continuing to secure checkout.</p>' +
+      '<div class="pdx-legal" tabindex="0">' + (o.legalHtml || '') + '</div>' +
+      '<label class="pdx-check"><input type="checkbox" id="pdx-agree"><span>I have read and agree to this disclaimer and the ' + esc(o.app || 'PharmDigit') + ' Terms of Use and Privacy Policy.</span></label>' +
+      '<p class="pdx-err" id="pdx-derr" role="alert"></p>' +
+      '<div class="pdx-row"><button class="pdx-btn primary" type="button" id="pdx-agree-go" disabled>Agree &amp; continue to checkout</button>' +
+      (o.onBack ? '<button class="pdx-btn ghost" type="button" id="pdx-dback">Back to plans</button>' : '') + '</div>' +
+      '<p class="pdx-small pdx-muted">Payments are processed securely by Stripe. PharmDigit never sees your card number. One-time payment; nothing renews automatically.</p>',
+      function (b) {
+        var c = $('#pdx-agree', b), g = $('#pdx-agree-go', b), bk = $('#pdx-dback', b);
+        c.addEventListener('change', function () { g.disabled = !c.checked; });
+        g.addEventListener('click', function () {
+          if (!c.checked) return;
+          g.disabled = true; g.textContent = 'Opening secure checkout…';
+          Promise.resolve().then(o.onAgree).then(null, function (x) { g.disabled = false; g.textContent = 'Agree & continue to checkout'; $('#pdx-derr', b).textContent = (x && x.message) || 'Checkout could not start. You were not charged.'; });
+        });
+        if (bk) bk.addEventListener('click', function () { close(); o.onBack(); });
+      });
+  }
+
+  /* Beta code: o: { code, signedIn, onRedeem(code) -> Promise<{expiresAt}>, onDone } */
+  var BETA_URL = 'https://us-central1-pharmdosage.cloudfunctions.net/redeemBetaCode';
+  function redeemBeta(idToken, code) {
+    return fetch(BETA_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken }, body: JSON.stringify({ code: code }) })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok || !j.ok) throw new Error(j.error || 'The code could not be redeemed. Please try again.'); return j; }); },
+        function () { throw new Error('Could not reach PharmDigit. Check your connection and try again.'); });
+  }
+  function betaDialog(o) {
+    o = o || {};
+    modal('beta',
+      '<h2 id="pdx-title">Redeem a beta code</h2>' +
+      '<p class="pdx-small">A beta code gives free access to ' + APPS_ALL + ' for a limited time. ' + (o.signedIn ? '' : 'You will create an account or sign in next, so your access works on any device.') + '</p>' +
+      '<form class="pdx-form" id="pdx-beta" novalidate><div class="pdx-field"><label for="pdx-code">Beta code</label><input id="pdx-code" class="pdx-code" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" required></div>' +
+      '<p class="pdx-err" id="pdx-berr" role="alert"></p>' +
+      '<div class="pdx-row"><button class="pdx-btn primary" type="submit" id="pdx-bgo">' + KEY_IC + (o.signedIn ? 'Redeem code' : 'Continue') + '</button><button class="pdx-btn ghost" type="button" data-pdx-bx>Cancel</button></div></form>',
+      function (b) {
+        var inp = $('#pdx-code', b), er = $('#pdx-berr', b), go = $('#pdx-bgo', b);
+        if (o.code) inp.value = o.code;
+        if (o.error) er.textContent = o.error;
+        $('[data-pdx-bx]', b).addEventListener('click', close);
+        $('#pdx-beta', b).addEventListener('submit', function (e) {
+          e.preventDefault(); er.textContent = '';
+          var code = inp.value.trim().toUpperCase();
+          if (!/^[A-Z0-9_-]{3,40}$/.test(code)) { er.textContent = 'Enter the beta code exactly as you received it.'; inp.focus(); return; }
+          go.disabled = true; go.lastChild.textContent = o.signedIn ? 'Checking…' : 'Continue';
+          Promise.resolve().then(function () { return o.onRedeem(code); }).then(function (res) {
+            if (res && res.expiresAt) betaDone(res, o.onDone);
+          }, function (x) { go.disabled = false; go.lastChild.textContent = o.signedIn ? 'Redeem code' : 'Continue'; er.textContent = (x && x.message) || 'The code could not be redeemed.'; });
+        });
+      });
+  }
+  function betaDone(res, onDone) {
+    var kept = res.kept && res.kept.length;
+    modal('betadone',
+      '<h2 id="pdx-title">Beta access is on</h2>' +
+      '<div class="pdx-fb ok"><span class="ttl">Free access until ' + fmtDate(res.expiresAt) + '</span><span>' + APPS_ALL + ' are unlocked for ' + plural(daysLeft(res.expiresAt), 'day') + '.' + (kept ? ' Apps where you already have a paid pass keep that pass.' : '') + '</span></div>' +
+      '<p class="pdx-small pdx-muted">Your access end date is always shown in Account. When beta access ends, the free questions remain available and you can buy a pass at any time.</p>' +
+      '<div class="pdx-row"><button class="pdx-btn primary" type="button" id="pdx-bok">Start studying</button></div>',
+      function (b) { $('#pdx-bok', b).addEventListener('click', close); }, { onClose: onDone });
+  }
+
+  /* Standard account dialog. o: { app, email, status, plan, state, onPlans, onBeta, onSignOut, onRefresh, note, extraHtml, onMount } */
+  function account(o) {
+    var acts = [];
+    var paid = o.state === 'active' && (o.plan === 'semester' || o.plan === 'lifetime');
+    if (!(o.state === 'active' && o.plan === 'lifetime') && o.onPlans) acts.push({ label: o.state === 'active' ? (o.plan === 'beta' ? 'View plans' : 'Extend or upgrade') : (o.state === 'expired' && o.plan !== 'beta') ? 'Renew a pass' : 'View plans', primary: true, onClick: function () { close(); o.onPlans(); } });
+    if (!paid && o.state !== 'active' && o.onBeta) acts.push({ label: 'Redeem a beta code', onClick: function () { close(); o.onBeta(); } });
+    if (o.onRefresh && (o.state === 'error' || o.state === 'checking')) acts.push({ label: 'Check my pass again', ghost: true, onClick: function () { o.onRefresh(); } });
+    acts.push({ label: 'Sign out', id: 'pdx-signout', onClick: function () { close(); o.onSignOut(); } });
+    openAccount({ title: 'Your account', email: o.email, status: o.status, actions: acts,
+      note: o.note || 'Your pass is saved to your account and works on any device where you sign in. Each PharmDigit app is purchased separately; beta codes unlock all four.',
+      extraHtml: o.extraHtml, onMount: o.onMount });
+  }
+
+  /* Standard "signed out" message so every app says the same thing */
+  function signedOut(freeText) { toast('Signed out.' + (freeText ? ' ' + freeText : '')); }
+
+  return { init: init, firebaseApp: firebaseApp, modal: modal, close: close, isOpen: isOpen, toast: toast, openAuth: openAuth, openAccount: openAccount,
+    statusCard: statusCard, passStatus: passStatus, label: label, buttonHTML: buttonHTML, daysLeft: daysLeft, fmtDate: fmtDate, every: every, esc: esc, USER_IC: USER_IC,
+    getStarted: getStarted, disclaimer: disclaimer, betaDialog: betaDialog, betaDone: betaDone, redeemBeta: redeemBeta, account: account, signedOut: signedOut, APPS_ALL: APPS_ALL, version: 3 };
+})();
+
+PDX.init({ accent: '#b85c00', accentInk: '#ffffff', darkAccent: '#f0a14b', darkAccentInk: '#1a1206', font: 'var(--f-body)', display: 'var(--f-display)', z: 3000, dark: [':root[data-theme="dark"]', 'auto'] });
+
 // ===================== ACCESS, ACCOUNTS & PAYMENTS =====================
 // Fill in the Firebase web config of your EXISTING PharmDigit project (same as PharmCalculation).
 // While apiKey is a placeholder, the app runs in TEST MODE: accounts and payments are simulated
@@ -1874,15 +2289,15 @@ const PKX = (function () {
     for (const p of v) { exp = addMonths(exp && exp > p.createdAt ? exp : p.createdAt, 6); if (first == null) first = p.createdAt; }
     return { status: 'active', plan: 'semester', expiresAt: exp, purchasedAt: first };
   }
-  const hasAccess = (e, now) => !!e && e.status === 'active' && (e.plan === 'lifetime' || (e.plan === 'semester' && typeof e.expiresAt === 'number' && e.expiresAt > now));
+  const hasAccess = (e, now) => !!e && e.status === 'active' && (e.plan === 'lifetime' || ((e.plan === 'semester' || e.plan === 'beta') && typeof e.expiresAt === 'number' && e.expiresAt > now));
 
   // ---- state ----
-  let user = null, ent = null, ready = false, unwatch = null, backend = null, pendingPlan = null, consent = false, lastPremium = null;
+  let user = null, ent = null, ready = false, unwatch = null, backend = null, pendingPlan = null, pendingCode = null, lastPremium = null;
   const CACHE = 'pharmpk_ent_cache';
   const cacheGet = uid => { try { const c = JSON.parse(localStorage.getItem(CACHE) || 'null'); return c && c.uid === uid ? c.ent : null; } catch (e) { return null; } };
   const cacheSet = (uid, e) => { try { e ? localStorage.setItem(CACHE, JSON.stringify({ uid, ent: e })) : localStorage.removeItem(CACHE); } catch (x) {} };
   const premium = () => hasAccess(ent, Date.now());
-  const expired = () => !!ent && ent.status === 'active' && ent.plan === 'semester' && !premium();
+  const expired = () => !!ent && ent.status === 'active' && (ent.plan === 'semester' || ent.plan === 'beta') && !premium();
   const entKey = () => JSON.stringify([ent && ent.status, ent && ent.plan, ent && ent.expiresAt]);
   const daysLeft = () => ent && ent.expiresAt ? Math.max(0, Math.ceil((ent.expiresAt - Date.now()) / 864e5)) : null;
   const open = t => premium() || PK_CONFIG.freeTopics.includes(t);
@@ -1913,8 +2328,8 @@ const PKX = (function () {
       return this.db.doc(`pharmpk_entitlements/${uid}`).onSnapshot(d => {
         if (!d.exists) return cb({ status: 'none', plan: null, expiresAt: null, purchasedAt: null });
         const x = d.data(); const ms = t => t && t.toMillis ? t.toMillis() : (typeof t === 'number' ? t : null);
-        const plan = x.planType === 'lifetime' || x.planType === 'semester' ? x.planType : null;
-        cb({ status: plan ? 'active' : 'none', plan, expiresAt: plan === 'semester' ? ms(x.expiresAt) : null, purchasedAt: ms(x.purchasedAt) });
+        const plan = x.planType === 'lifetime' || x.planType === 'semester' || x.planType === 'beta' ? x.planType : null;
+        cb({ status: plan ? 'active' : 'none', plan, expiresAt: plan && plan !== 'lifetime' ? ms(x.expiresAt) : null, purchasedAt: ms(x.purchasedAt) });
       }, err => { console.warn('Entitlement read failed', err); cb(null, err); });
     },
     async checkout(plan) {
@@ -1928,7 +2343,8 @@ const PKX = (function () {
       location.assign(body.url);
     },
     // Access is granted only by the verified Stripe webhook; the live Firestore listener picks it up.
-    async verify() { return null; }
+    async verify() { return null; },
+    async redeemBeta(code) { return PDX.redeemBeta(await this.auth.currentUser.getIdToken(), code); }
   };
 
   // ---- Simulated backend (TEST MODE): a fake "server" kept in localStorage, separate from the device session ----
@@ -1963,7 +2379,17 @@ const PKX = (function () {
     async google() { const email = 'google.test.user@example.com', d = sv(); if (!d.users[email]) { d.users[email] = { uid: 'test_google', hash: '-' }; svSave(d); } this.setSession({ uid: d.users[email].uid, email }); },
     async reset(email) { if (!/^\S+@\S+\.\S+$/.test((email || '').trim())) throw err('auth/invalid-email'); },
     async signOut() { this.setSession(null); },
-    entFor(uid) { return computeEntitlement((sv().purchases[uid] || [])); },
+    entFor(uid) {
+      const e = computeEntitlement((sv().purchases[uid] || [])), b = (sv().beta || {})[uid];
+      if (b && !hasAccess(e, Date.now())) return { status: 'active', plan: 'beta', expiresAt: b, purchasedAt: null };
+      return e;
+    },
+    async redeemBeta(code) {                     // test mode: PHARMDTEST3 works once per account
+      const s = this.session(); if (!s) throw err('unauthenticated', 'Sign in to redeem a beta code.');
+      if (code !== 'PHARMDTEST3') throw err('not-found', 'This beta code is not valid.');
+      const d = sv(); d.beta = d.beta || {}; if (d.beta[s.uid]) throw err('already', 'You have already redeemed this code.');
+      const exp = Date.now() + 60 * 864e5; d.beta[s.uid] = exp; svSave(d); this.emit(); return { ok: true, expiresAt: exp, kept: [] };
+    },
     emit() { this.listeners.forEach(f => f()); },
     watch(uid, cb) { const f = () => cb(this.entFor(uid)); this.listeners.add(f); setTimeout(f, 0); return () => this.listeners.delete(f); },
     async checkout(plan) {
@@ -2043,31 +2469,56 @@ const PKX = (function () {
       ${statusLine()}
       ${planCards(sel)}
       ${freeList()}
-      <label class="pk-consent"><input type="checkbox" id="pk-consent" ${consent ? 'checked' : ''}> <span>I understand PharmPK is an educational tool and not prescribing guidance, and I agree to the <a href="#" data-legal-go="terms">Terms of Use</a> and <a href="#" data-legal-go="privacy">Privacy Policy</a>.</span></label>
-      <p class="err" id="pk-err" role="alert"></p>
-      <p class="small muted">Payments are processed securely by Stripe; PharmDigit never sees your card number. ${TEST ? '<b>Test mode:</b> checkout is simulated and no card is charged.' : ''}</p>`,
+      ${premium() ? '' : '<p class="small" style="text-align:center"><a href="#" data-pk-beta>Have a beta code? Redeem it</a></p>'}
+      <p class="small muted">${user ? `Signed in as <b>${esc(user.email || 'your account')}</b>.` : 'No account is needed to compare plans. When you choose one, you will create an account or sign in, then go straight to secure checkout.'} Payments are processed securely by Stripe; PharmDigit never sees your card number. ${TEST ? '<b>Test mode:</b> checkout is simulated and no card is charged.' : ''}</p>`,
     b => {
-      $('#pk-consent', b).onchange = e => { consent = e.target.checked; $('#pk-err', b).textContent = ''; };
-      $$('[data-legal-go]', b).forEach(a => a.onclick = e => { e.preventDefault(); closeModal(); window.PK_APP && PK_APP.nav('guide', { sec: a.dataset.legalGo }); });
-      $$('[data-buy]', b).forEach(btn => btn.onclick = () => buy(btn.dataset.buy, b));
+      $$('[data-buy]', b).forEach(btn => btn.onclick = () => buy(btn.dataset.buy));
+      bind(b);
     }, { wide: true });
   }
   function statusLine() {
     if (premium() && ent.plan === 'lifetime') return `<div class="fb ok"><span class="ttl">You have a Lifetime Pass.</span><span>Full access with no expiration.</span></div>`;
+    if (premium() && ent.plan === 'beta') return `<div class="fb ok"><span class="ttl">Beta access until ${fmtDate(ent.expiresAt)} (${daysLeft()} days left).</span><span>If you buy a Semester Pass now, its 6 months start when beta access ends.</span></div>`;
     if (premium()) return `<div class="fb ok"><span class="ttl">Semester Pass active until ${fmtDate(ent.expiresAt)} (${daysLeft()} days left).</span><span>Extending adds 6 months to your current end date. Upgrading to Lifetime removes the expiration.</span></div>`;
-    if (expired()) return `<div class="fb bad"><span class="ttl">Your Semester Pass expired on ${fmtDate(ent.expiresAt)}.</span><span>Renew to unlock all chapters again.</span></div>`;
+    if (expired()) return `<div class="fb bad"><span class="ttl">Your ${ent.plan === 'beta' ? 'beta access ended' : 'Semester Pass expired'} on ${fmtDate(ent.expiresAt)}.</span><span>Choose a pass to unlock all chapters again.</span></div>`;
     return '';
   }
 
-  async function buy(plan, b) {
-    const er = b && $('#pk-err', b);
-    if (!consent) { if (er) er.textContent = 'Please tick the box to confirm you agree before continuing.'; const c = b && $('#pk-consent', b); c && c.focus(); return; }
-    if (premium() && ent.plan === 'lifetime') { if (er) er.textContent = 'You already have a Lifetime Pass.'; return; }
-    if (!user) { pendingPlan = plan; return openAuth('signup', `Create an account or sign in to buy the ${PK_PLANS[plan].name}. Your pass is linked to this account, so it works on any device.`); }
-    try { sessionStorage.setItem('pk_before', entKey()); } catch (e) {}
-    modal(`<h2 id="pkm-title">Opening secure checkout…</h2><p class="small muted">${PK_PLANS[plan].name} · ${PK_PLANS[plan].price}</p><div class="pk-spin" aria-hidden="true"></div>`, null, { lock: true });
-    try { await backend.checkout(plan); }
-    catch (e) { modal(`<h2 id="pkm-title">Checkout could not start</h2><p class="err">${esc(msgOf(e))}</p><div class="row"><button class="btn primary" id="pk-back">Back to plans</button></div>`, x => $('#pk-back', x).onclick = () => openPlans(plan)); }
+  // ---- shared PharmDigit flow: Get started -> sign in -> (pass check) -> disclaimer -> Stripe ----
+  const PK_LEGAL = '<h4>Educational use only</h4><p>PharmPK is a learning tool for students. It is not a medical device, clinical decision support system or substitute for professional judgment. Cases, calculations, calculator outputs and simulations are <b>not prescribing guidance</b> and must not be used for real patients.</p>' +
+    '<h4>Accuracy</h4><ul><li>Population parameters and target ranges are textbook estimates; guidelines and labeling change. Always verify against current authoritative sources.</li><li>Answer keys were checked, but errors may remain.</li><li>Scores do not predict results on course or licensing exams. PharmDigit is not affiliated with NABP.</li></ul>' +
+    '<h4>Your pass</h4><ul><li>One-time payment processed by Stripe. Nothing renews automatically.</li><li>Semester Pass: 6 months of full access; buying again adds 6 months. Lifetime Pass: no expiration.</li><li>The pass is tied to your account and unlocks PharmPK only.</li></ul>' +
+    '<h4>Privacy</h4><p>Your account stores your email and pass. Study progress stays in this browser. Full Terms of Use and Privacy Policy are in the User Manual.</p>';
+  function openGetStarted(o = {}) {
+    closeModal();
+    pendingPlan = o.plan || null; pendingCode = o.code || null;
+    PDX.getStarted({ app: 'PharmPK', freeText: 'Chapters 1–2 never need an account.',
+      plan: o.plan ? { name: PK_PLANS[o.plan].name, price: PK_PLANS[o.plan].price } : null, code: o.code || null,
+      onChoose: mode => openAuth(mode), onPlans: () => openPlans(o.plan), onBeta: () => openBeta() });
+  }
+  function buy(plan) {
+    if (premium() && ent.plan === 'lifetime') { toast('You already have a Lifetime Pass. No new payment is needed.'); return; }
+    if (!user) return openGetStarted({ plan });
+    closeModal();
+    const p = PK_PLANS[plan];
+    PDX.disclaimer({ app: 'PharmPK', plan: { name: p.name, price: p.price, term: plan === 'semester' ? '6 months of full access' : 'no expiration' },
+      legalHtml: PK_LEGAL + (TEST ? '<p class="pdx-note">Test mode: checkout is simulated and no card is charged.</p>' : ''),
+      onBack: () => openPlans(plan),
+      onAgree: async () => {
+        try { sessionStorage.setItem('pk_before', entKey()); } catch (e) {}
+        if (TEST) PDX.close();
+        await backend.checkout(plan);
+      } });
+  }
+  function openBeta(code, error) {
+    closeModal();
+    PDX.betaDialog({ code, error, signedIn: !!user,
+      onRedeem: c => { if (!user) { PDX.close(); openGetStarted({ code: c }); return null; } return backend.redeemBeta(c); },
+      onDone: () => { window.PK_APP && PK_APP.refresh(); } });
+  }
+  async function resumeBeta(code) {
+    try { const res = await backend.redeemBeta(code); PDX.betaDone(res, () => { window.PK_APP && PK_APP.refresh(); }); }
+    catch (e) { openBeta(code, msgOf(e)); }
   }
 
   function simulatedCheckout(id, plan) {
@@ -2079,67 +2530,42 @@ const PKX = (function () {
       b => { $('#pk-pay', b).onclick = async () => { await MockBackend.pay(id); handleReturn('success', id); }; $('#pk-cancel', b).onclick = () => handleReturn('cancel'); }, { lock: true });
   }
 
-  function openAuth(mode = 'signin', note) {
-    const google = PK_CONFIG.googleSignIn ? `<button class="btn" id="pk-google" type="button"><svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Continue with Google</button><div class="pk-or"><span>or</span></div>` : '';
-    modal(`<h2 id="pkm-title">${mode === 'signup' ? 'Create your account' : 'Sign in'}</h2>
-      ${note ? `<p class="small">${esc(note)}</p>` : '<p class="small muted">Sign in to check your PharmPK pass on this device.</p>'}
-      <div class="seg" role="tablist"><button type="button" data-mode="signin" aria-pressed="${mode === 'signin'}">Sign in</button><button type="button" data-mode="signup" aria-pressed="${mode === 'signup'}">Create account</button></div>
-      ${google}
-      <form id="pk-auth" class="pk-form" novalidate>
-        <div class="field"><label for="pk-email">Email</label><input id="pk-email" type="email" autocomplete="email" required></div>
-        <div class="field"><label for="pk-pw">Password</label><input id="pk-pw" type="password" autocomplete="${mode === 'signup' ? 'new-password' : 'current-password'}" minlength="6" required></div>
-        ${mode === 'signup' ? '<div class="field"><label for="pk-pw2">Confirm password</label><input id="pk-pw2" type="password" autocomplete="new-password" required></div>' : ''}
-        <p class="err" id="pk-aerr" role="alert"></p>
-        <div class="row"><button class="btn primary" type="submit">${mode === 'signup' ? 'Create account' : 'Sign in'}</button>${mode === 'signin' ? '<button class="btn ghost" type="button" id="pk-forgot">Forgot password?</button>' : ''}</div>
-      </form>
-      ${TEST ? '<p class="small muted"><b>Test mode:</b> accounts are simulated in this browser. Do not use a real password.</p>' : ''}`,
-    b => {
-      const er = $('#pk-aerr', b);
-      $$('[data-mode]', b).forEach(x => x.onclick = () => openAuth(x.dataset.mode, note));
-      const g = $('#pk-google', b); if (g) g.onclick = async () => { try { await backend.google(); } catch (e) { er.textContent = msgOf(e); } };
-      const f = $('#pk-forgot', b); if (f) f.onclick = async () => { const em = $('#pk-email', b).value.trim(); if (!em) { er.textContent = 'Enter your email above, then select Forgot password.'; return; } try { await backend.reset(em); er.textContent = ''; toast('If an account exists for that email, a reset link has been sent.'); } catch (e) { er.textContent = msgOf(e); } };
-      $('#pk-auth', b).addEventListener('submit', async e => {
-        e.preventDefault(); er.textContent = '';
-        const em = $('#pk-email', b).value.trim(), pw = $('#pk-pw', b).value;
-        if (mode === 'signup' && pw !== $('#pk-pw2', b).value) { er.textContent = 'Passwords do not match.'; return; }
-        const btn = $('button[type=submit]', b); btn.disabled = true;
-        try { await (mode === 'signup' ? backend.signUp(em, pw) : backend.signIn(em, pw)); }
-        catch (x) { er.textContent = msgOf(x); btn.disabled = false; }
-      });
-    });
+  function openAuth(mode = 'signin') {
+    const note = pendingPlan ? `Create an account or sign in to buy the ${PK_PLANS[pendingPlan].name}. Your selected plan is saved, and you will go straight to checkout.`
+      : pendingCode ? 'Create an account or sign in to redeem your beta code. Your code is saved.' : null;
+    PDX.openAuth({ mode, note, noteSignin: note || 'Sign in to check your PharmPK pass on this device.', noteSignup: note || 'Your pass is saved to your account, so it works on any device.',
+      google: PK_CONFIG.googleSignIn, minPw: 6,
+      footHtml: TEST ? '<b>Test mode:</b> accounts are simulated in this browser. Do not use a real password.' : '',
+      onGoogle: () => backend.google().catch(e => { throw new Error(msgOf(e)); }),
+      onForgot: em => backend.reset(em).then(() => 'If an account exists for that email, a reset link has been sent. Check your Junk or Spam folder if it does not arrive.', e => { throw new Error(msgOf(e)); }),
+      onSubmit: d => (d.mode === 'signup' ? backend.signUp(d.email, d.password) : backend.signIn(d.email, d.password)).catch(e => { throw new Error(msgOf(e)); }) });
   }
 
   function openAccount() {
-    if (!user) return openAuth('signin');
-    const plan = premium() ? (ent.plan === 'lifetime'
-      ? `<div class="fb ok"><span class="ttl">Lifetime Pass</span><span>Full access · no expiration${ent.purchasedAt ? ` · purchased ${fmtDate(ent.purchasedAt)}` : ''}</span></div>`
-      : `<div class="fb ok"><span class="ttl">Semester Pass · ${daysLeft()} ${daysLeft() === 1 ? 'day' : 'days'} remaining</span><div class="pk-meter${daysLeft() <= 14 ? ' low' : ''}" role="img" aria-label="${daysLeft()} days remaining"><i style="width:${Math.max(2, Math.round(Math.min(1, daysLeft() / 183) * 100))}%"></i></div><span>Full access until ${fmtDate(ent.expiresAt)}${ent.purchasedAt ? ` · first purchased ${fmtDate(ent.purchasedAt)}` : ''}</span></div>`)
-      : expired() ? `<div class="fb bad"><span class="ttl">Semester Pass expired</span><span>Ended ${fmtDate(ent.expiresAt)}. Free access to Chapters 1–2 continues.</span></div>`
-      : `<div class="fb hint"><span class="ttl">Free access</span><span>${nFree()} of ${nTopics()} chapters unlocked.</span></div>`;
-    const tools = TEST ? `<details class="pk-test"><summary>Test mode tools</summary><p class="small muted">Simulate scenarios without a real backend. Data lives only in this browser.</p>
-      <div class="row"><button class="btn sm" data-t="expire">Expire my Semester Pass</button><button class="btn sm" data-t="refund">Refund last purchase</button><button class="btn sm" data-t="clear">Remove all my passes</button></div>
-      <div class="row"><button class="btn sm" data-t="device">Simulate a new device</button><button class="btn sm ghost" data-t="wipe">Reset all test accounts</button></div></details>` : '';
-    modal(`<h2 id="pkm-title">Your account</h2><p class="small muted">Signed in as <b>${esc(user.email || 'your account')}</b></p>${plan}
-      <div class="row">${premium() && ent.plan === 'lifetime' ? '' : `<button class="btn primary" id="pk-plans">${premium() ? 'Upgrade or extend' : expired() ? 'Renew a pass' : 'See plans'}</button>`}<button class="btn" id="pk-out">Sign out</button></div>
-      <p class="small muted">Your pass is stored with your account and works on any device where you sign in. Study progress is saved on each device separately.</p>${tools}`,
-    b => {
-      const pl = $('#pk-plans', b); if (pl) pl.onclick = () => openPlans();
-      $('#pk-out', b).onclick = signOut;
-      $$('[data-t]', b).forEach(x => x.onclick = () => {
+    if (!user) return openGetStarted();
+    closeModal();
+    const st = premium() ? 'active' : expired() ? 'expired' : 'free';
+    const tools = TEST ? `<details class="pdx-tools"><summary>Test mode tools</summary><p class="pdx-small pdx-muted">Simulate scenarios without a real backend. Data lives only in this browser.</p>
+      <div class="pdx-row"><button class="pdx-btn" data-t="expire">Expire my Semester Pass</button><button class="pdx-btn" data-t="refund">Refund last purchase</button><button class="pdx-btn" data-t="clear">Remove all my passes</button></div>
+      <div class="pdx-row"><button class="pdx-btn" data-t="device">Simulate a new device</button><button class="pdx-btn ghost" data-t="wipe">Reset all test accounts</button></div></details>` : '';
+    PDX.account({ email: user.email || 'your account', state: st, plan: ent && ent.plan,
+      status: PDX.passStatus({ state: st, plan: ent && ent.plan, expiresAt: ent && ent.expiresAt, purchasedAt: ent && ent.purchasedAt, semName: 'Semester Pass', lifeName: 'Lifetime Pass', termDays: 183,
+        freeText: `${nFree()} of ${nTopics()} chapters unlocked (Chapters 1–2 are free).` }),
+      onPlans: () => openPlans(), onBeta: () => openBeta(), onSignOut: signOut, extraHtml: tools,
+      onMount: b => $$('[data-t]', b).forEach(x => x.onclick = () => {
         const t = x.dataset.t;
         if (t === 'expire') { if (MockBackend.expire()) toast('Semester Pass set to expired yesterday.'); else toast('No Semester Pass to expire (Lifetime passes never expire).'); }
         if (t === 'refund') toast(MockBackend.refundLast() ? 'Last purchase refunded; access recalculated.' : 'No purchases to refund.');
         if (t === 'clear') { MockBackend.clearPurchases(); toast('All passes removed from this test account.'); }
-        if (t === 'device') { closeModal(); MockBackend.newDevice(); toast('New device simulated: signed out. Sign in again to restore your pass.'); return; }
-        if (t === 'wipe') { closeModal(); MockBackend.wipe(); toast('All test accounts and purchases removed.'); return; }
+        if (t === 'device') { PDX.close(); MockBackend.newDevice(); toast('New device simulated: signed out. Sign in again to restore your pass.'); return; }
+        if (t === 'wipe') { PDX.close(); MockBackend.wipe(); toast('All test accounts and purchases removed.'); return; }
         setTimeout(openAccount, 50);
-      });
-    });
+      }) });
   }
 
   async function signOut() {
     try { await backend.signOut(); } catch (e) {}
-    closeModal(); toast('Signed out. Free access to Chapters 1–2 remains available.');
+    closeModal(); PDX.close(); PDX.signedOut('Chapters 1–2 remain free.');
   }
 
   // ---- checkout return ----
@@ -2150,7 +2576,7 @@ const PKX = (function () {
       return modal(`<h2 id="pkm-title">Checkout canceled</h2><p>You were not charged. Your access has not changed: Chapters 1–2 remain free.</p><div class="row"><button class="btn primary" id="pk-again">See plans again</button><button class="btn" id="pk-close">Continue studying</button></div>`,
         b => { $('#pk-again', b).onclick = () => openPlans(); $('#pk-close', b).onclick = closeModal; });
     }
-    if (!user) { returnPending = sessionId; return modal(`<h2 id="pkm-title">Sign in to finish</h2><p>Your payment was received. Sign in with the account you used at checkout to activate your pass.</p><div class="row"><button class="btn primary" id="pk-si">Sign in</button></div>`, b => $('#pk-si', b).onclick = () => openAuth('signin')); }
+    if (!user) { returnPending = sessionId; return modal(`<h2 id="pkm-title">Sign in to finish</h2><p>Your payment was received. Sign in with the account you used at checkout to activate your pass.</p><div class="row"><button class="btn primary" id="pk-si">Sign in</button></div>`, b => $('#pk-si', b).onclick = () => { closeModal(); openAuth('signin'); }); }
     modal(`<h2 id="pkm-title">Confirming your payment…</h2><p class="small muted">This usually takes a few seconds.</p><div class="pk-spin" aria-hidden="true"></div>`, null, { lock: true });
     let lastErr = null, before = null;
     try { before = sessionStorage.getItem('pk_before'); sessionStorage.removeItem('pk_before'); } catch (e) {}
@@ -2173,11 +2599,10 @@ const PKX = (function () {
   function renderChrome() {
     const btn = $('#acctbtn');
     if (btn) {
-      const sem = premium() && ent.plan === 'semester', d = sem ? daysLeft() : null;
-      const label = !user ? 'Sign in' : premium() ? (ent.plan === 'lifetime' ? 'Lifetime' : `Semester · ${d}d`) : expired() ? 'Renew' : 'Account';
+      const l = PDX.label({ ready, signedIn: !!user, state: premium() ? 'active' : expired() ? 'expired' : 'free', plan: ent && ent.plan, expiresAt: ent && ent.expiresAt, semName: 'Semester' });
       // short label ("182d") replaces the long one on narrow screens, so days remaining stay visible on phones
-      btn.innerHTML = `${USER}${sem ? `<span class="as">${d}d</span>` : ''}<span class="al">${label}</span>`;
-      btn.setAttribute('aria-label', !user ? 'Sign in or create an account' : sem ? `Account: Semester Pass, ${d} ${d === 1 ? 'day' : 'days'} remaining` : `Account: ${label}`); btn.title = !user ? 'Sign in' : (user.email || 'Account');
+      btn.innerHTML = `${USER}${l.short ? `<span class="as">${l.short}</span>` : ''}<span class="al">${esc(l.long)}</span>`;
+      btn.setAttribute('aria-label', l.aria); btn.title = !user ? 'Get started: create an account or sign in' : (user.email || 'Account');
       btn.classList.toggle('pro', premium()); btn.classList.toggle('hot', !!user && expired());
     }
     const bar = $('#accessbar');
@@ -2185,8 +2610,8 @@ const PKX = (function () {
       if (premium() || !ready) { bar.hidden = true; bar.innerHTML = ''; }
       else {
         bar.hidden = false;
-        bar.innerHTML = `<div class="ab-in">${LOCK}<span>${expired() ? `<b>Your Semester Pass expired on ${fmtDate(ent.expiresAt)}.</b> ` : '<b>Free access</b> · '}<span class="ab-count">${nFree()} of ${nTopics()} chapters unlocked</span> (Chapters 1–2). Plans from ${PK_PLANS.semester.price}.</span>
-          <span class="ab-act">${!user ? '<button class="btn sm ghost" data-pk-signin>Sign in</button>' : ''}<button class="btn sm primary" data-pk-plans>${expired() ? 'Renew' : 'See plans'}</button></span></div>`;
+        bar.innerHTML = `<div class="ab-in">${LOCK}<span>${expired() ? `<b>Your ${ent.plan === 'beta' ? 'beta access ended' : 'Semester Pass expired'} on ${fmtDate(ent.expiresAt)}.</b> ` : '<b>Free access</b> · '}<span class="ab-count">${nFree()} of ${nTopics()} chapters unlocked</span> (Chapters 1–2). Plans from ${PK_PLANS.semester.price}.</span>
+          <span class="ab-act"><button class="btn sm primary" data-pk-plans>${expired() ? 'Renew' : 'View plans'}</button>${!user ? '<button class="btn sm ghost" data-pk-signin>Get started</button>' : ''}</span></div>`;
         bind(bar);
       }
     }
@@ -2194,12 +2619,13 @@ const PKX = (function () {
   }
   function bind(root) {
     $$('[data-pk-plans]', root).forEach(b => b.onclick = e => { e.preventDefault(); e.stopPropagation(); openPlans(b.dataset.pkPlans || undefined); });
-    $$('[data-pk-signin]', root).forEach(b => b.onclick = e => { e.preventDefault(); e.stopPropagation(); openAuth('signin'); });
+    $$('[data-pk-signin]', root).forEach(b => b.onclick = e => { e.preventDefault(); e.stopPropagation(); openGetStarted(); });
+    $$('[data-pk-beta]', root).forEach(b => b.onclick = e => { e.preventDefault(); e.stopPropagation(); openBeta(); });
   }
   function lockHTML(what) {
     return `<div class="panel lockp"><div class="lockrow"><span class="lockic">${LOCK}</span><div style="display:grid;gap:6px"><h3>${esc(what)} ${/s$/.test(what) && !/s's$/.test(what) ? 'are' : 'is'} part of the full version</h3>
       <p class="small muted">Chapters 1–2 are free. A <b>Semester Pass</b> (${PK_PLANS.semester.price}, 6 months) or <b>Lifetime Pass</b> (${PK_PLANS.lifetime.price}, no expiration) unlocks all ${nTopics()} chapters, every guided problem and clinical case, unit exams, the midterm and final, and the calculators.</p></div></div>
-      <div class="row"><button class="btn primary" data-pk-plans>See plans</button>${!user ? '<button class="btn" data-pk-signin>Already purchased? Sign in</button>' : ''}</div></div>`;
+      <div class="row"><button class="btn primary" data-pk-plans>View plans</button>${!user ? '<button class="btn" data-pk-signin>Get started</button>' : ''}<button class="btn ghost" data-pk-beta>Have a beta code?</button></div></div>`;
   }
 
   function onEntitlement(e) {
@@ -2210,7 +2636,7 @@ const PKX = (function () {
   function afterChange() {
     renderChrome();
     const d = premium() && ent.plan === 'semester' ? daysLeft() : null;
-    if (d !== lastDays) { const m = $('#pkmodal'); if (lastDays !== null && m && !m.hidden && $('#pk-out', m)) openAccount(); lastDays = d; }
+    if (d !== lastDays) { if (lastDays !== null && PDX.isOpen('account')) openAccount(); lastDays = d; }
     const p = premium();
     if (lastPremium !== null && p !== lastPremium && window.PK_APP) PK_APP.refresh();
     lastPremium = p;
@@ -2222,19 +2648,25 @@ const PKX = (function () {
     else { ent = cacheGet(u.uid); unwatch = backend.watch(u.uid, onEntitlement); }
     if (!ready) { ready = true; lastPremium = premium(); renderChrome(); window.PK_APP && PK_APP.refresh(); }
     else afterChange();
-    const m = $('#pkmodal');
-    if (u && changed && m && !m.hidden && $('#pk-auth', m)) {
-      closeModal(); toast(`Signed in as ${u.email || 'your account'}.`);
+    if (u && changed && PDX.isOpen('auth')) {
+      PDX.close(); toast(`Signed in as ${u.email || 'your account'}.`);
       if (returnPending) { const id = returnPending; returnPending = null; return handleReturn('success', id); }
-      if (pendingPlan) { const pl = pendingPlan; pendingPlan = null; setTimeout(() => buy(pl, null), 400); }
-    }
+      if (pendingCode) { const c = pendingCode; pendingCode = null; pendingPlan = null; return resumeBeta(c); }
+      if (pendingPlan) { const pl = pendingPlan; pendingPlan = null; setTimeout(() => resumePurchase(pl), 300); }
+    } else if (!u) { pendingPlan = null; pendingCode = null; }
+  }
+  // after sign-in during a purchase: wait briefly for the pass so nobody pays twice, then show the disclaimer
+  async function resumePurchase(plan) {
+    for (let i = 0; i < 12 && user && ent == null; i++) await new Promise(r => setTimeout(r, 400));
+    if (premium() && ent.plan === 'lifetime') { toast('You already have a Lifetime Pass. No new payment is needed.'); return; }
+    buy(plan);
   }
 
   async function start() {
     const ab = document.createElement('div'); ab.id = 'accessbar'; ab.hidden = true;
     const main = $('#app'); main.parentNode.insertBefore(ab, main);
     if (TEST) { const s = document.createElement('div'); s.id = 'teststrip'; s.innerHTML = '<span><b>Test mode</b> · Sign-in and payments are simulated in this browser. Add your Firebase config to enable real accounts and Stripe payments.</span>'; document.body.insertBefore(s, document.body.firstChild); }
-    $('#acctbtn').onclick = () => user ? openAccount() : openAuth('signin');
+    $('#acctbtn').onclick = () => user ? openAccount() : openGetStarted();
     backend = TEST ? MockBackend : FirebaseBackend;
     try { await backend.init(onUser); }
     catch (e) { console.error(e); ready = true; renderChrome(); toast('Sign-in service unavailable. Free chapters still work.'); }
@@ -2246,7 +2678,7 @@ const PKX = (function () {
     window.addEventListener('focus', afterChange);                     // also refresh when the window regains focus
   }
 
-  return { start, premium, open, expired, lockHTML, bind, openPlans, openAuth, openAccount, isTest: TEST, daysLeft, get user() { return user; }, get ent() { return ent; }, _computeEntitlement: computeEntitlement, _hasAccess: hasAccess };
+  return { start, premium, open, expired, lockHTML, bind, openPlans, openAuth, openAccount, openGetStarted, openBeta, isTest: TEST, daysLeft, get user() { return user; }, get ent() { return ent; }, _computeEntitlement: computeEntitlement, _hasAccess: hasAccess };
 })();
 
 // ===== EXPANSION A: Introduction & Clearance, Math, Volume of Distribution =====
@@ -4088,7 +4520,7 @@ function vPractice(el){
     <h3>Unit exams</h3><div class="agrid">${grp('Unit exam').map(assessCard).join('')}</div>
     <h3>Midterm & final</h3><div class="agrid">${grp('Major').map(assessCard).join('')}</div></div>`; })()}
   <div class="two">
-    <div class="panel"><h3>Custom practice exam</h3>${PKX.premium() ? '' : '<p class="small"><b>Free version:</b> questions come from Chapters 1–2 only. <a href="#" data-pk-plans>See plans</a> to include all chapters.</p>'}<p class="small muted">Build your own exam across all topics. No feedback until you submit; results break down by topic, error type and skill stage.</p>
+    <div class="panel"><h3>Custom practice exam</h3>${PKX.premium() ? '' : '<p class="small"><b>Free version:</b> questions come from Chapters 1–2 only. <a href="#" data-pk-plans>View plans</a> to include all chapters.</p>'}<p class="small muted">Build your own exam across all topics. No feedback until you submit; results break down by topic, error type and skill stage.</p>
       <div class="fields">
         <div class="field"><label for="ex-n">Questions</label><select id="ex-n"><option>10</option><option selected>20</option><option>30</option><option value="${QUESTIONS.length}">All (${QUESTIONS.length})</option></select></div>
         <div class="field"><label for="ex-lv">Difficulty</label><select id="ex-lv"><option value="all">Mixed</option><option value="E">Easy</option><option value="M">Medium</option><option value="H">Hard</option><option value="MH">Medium + Hard</option></select></div>
@@ -4517,7 +4949,7 @@ function vGuide(el, opts){
     ['requirements','System requirements', list(['A current version of Chrome, Edge, Safari or Firefox on a computer, tablet or phone.','JavaScript enabled.','An internet connection for the first load. Fonts come from Google Fonts; if they cannot load, the app uses your system fonts and still works.','Browser storage allowed for this site, so progress can be saved.']) + p('No installation is required. Chapters 1–2 work without an account; an account is needed only to buy and use a pass.')],
     ['plans','Plans, sign-in & access', sub('Free access') + list(['Chapters 1–2 (Introduction, ADME & Clearance; Math & Units Toolkit) are free: their topic pages, questions, guided problems, clinical case and chapter quizzes.','The User Manual, Curriculum page and performance tracking are also free. The custom exam and adaptive review draw from the free chapters.','The bar under the top menu shows how many chapters are unlocked. Locked items show a lock icon.']) +
       sub('Passes') + list(['<b>Semester Pass — $14.99</b>, one-time payment: full access for 6 months from the purchase date. Buying another Semester Pass before it ends adds 6 months to the current end date.','<b>Lifetime Pass — $29.99</b>, one-time payment: permanent access to every chapter and feature, including future PharmPK updates. Semester users can upgrade at any time.','A pass unlocks all 15 chapters, all guided problems and clinical cases, unit exams, the midterm and final, and the calculators and simulator.','PharmPK passes are separate from PharmCalculation and PharmDosage: each app is purchased on its own.']) +
-      sub('Buying a pass') + steps(['Select <b>See plans</b> (in the access bar or on any locked page).','Tick the box to confirm you understand PharmPK is an educational tool and accept the Terms of Use.','Choose a plan. If you are not signed in, create an account or sign in first.','Pay on the secure Stripe checkout page. You return to PharmPK automatically and your pass is activated within seconds.','If you cancel at checkout, you are not charged and your access does not change.']) +
+      sub('Buying a pass') + steps(['Select <b>View plans</b> (in the access bar or on any locked page). No account is needed to compare plans.','Choose a plan. If you are not signed in, choose <b>Create a free account</b> or <b>Sign in</b>; your selected plan is kept.','Read the disclaimer, tick the box to confirm you understand PharmPK is an educational tool and accept the Terms of Use, then select <b>Agree &amp; continue to checkout</b>.','Pay on the secure Stripe checkout page. You return to PharmPK automatically and your pass is activated within seconds.','If you cancel at checkout, you are not charged and your access does not change.']) +
       sub('Your account') + list(['Select the account button (person icon) at the top right to sign in, create an account, check your pass or sign out.','Semester Pass holders see the end date and days remaining; Lifetime Pass holders see “no expiration”.','Your pass is stored with your account, so it works on any device where you sign in. Signing out locks premium content on that device until you sign in again.','When a Semester Pass expires, premium content locks automatically and Chapters 1–2 remain free. You can renew at any time.','Study progress (answers, scores, gradebook) is saved on each device separately; it is not part of your account.'])]
    ]},
    {g:'Getting started', items:[

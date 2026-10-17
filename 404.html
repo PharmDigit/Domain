@@ -2612,9 +2612,10 @@ window.PharmDigit = (function () {
 </style>
 <script>
 /* ════════════════════════════════════════════════════════════════
-   PharmDigit shared account UI  (PDX)
-   Same sign-in, account and "days remaining" experience in
-   PharmDosage, PharmCalculation and PharmPK.
+   PharmDigit shared account UI  (PDX v3)
+   Same Get started, sign-in, plans, purchase disclaimer, beta code,
+   account and "days remaining" experience in PharmDosage,
+   PharmCalculation, PharmPK and PharmRx.
    UI only: every app keeps its own Firebase Auth, Stripe checkout,
    pass storage and access rules. Each app calls PDX with callbacks
    that run its existing logic.
@@ -2681,6 +2682,18 @@ window.PDX = window.PDX || (function () {
       '.pdx-note{background:var(--pdx-warn-soft);border-radius:8px;padding:8px 10px;font-size:.84rem}' +
       '.pdx-tools{border:1px dashed var(--pdx-line-strong);border-radius:6px;padding:10px 12px;display:grid;gap:8px}.pdx-tools summary{cursor:pointer;font-weight:600;font-size:.86rem}' +
       '.pdx-check{display:flex;gap:10px;align-items:flex-start;font-size:.86rem}.pdx-check input{margin-top:3px;flex:none;width:auto;min-height:0}' +
+      '.pdx-opts{display:grid;gap:10px;margin:0}' +
+      '.pdx-opt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--pdx-surface);border:1.5px solid var(--pdx-line);border-radius:12px;padding:12px 14px;margin:0;color:var(--pdx-fg);font:inherit;cursor:pointer;min-height:0;box-shadow:none;text-transform:none;letter-spacing:normal}' +
+      '.pdx-opt:hover,.pdx-opt:focus-visible{border-color:var(--pdx-accent)}' +
+      '.pdx-opt b{display:block;font-size:1rem}.pdx-opt small{display:block;color:var(--pdx-muted);font-size:.84rem;line-height:1.4;margin-top:2px}' +
+      '.pdx-opt .pdx-oic{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--pdx-sunk);color:var(--pdx-accent)}' +
+      '.pdx-opt.primary{border-color:var(--pdx-accent)}.pdx-opt.primary .pdx-oic{background:var(--pdx-accent);color:var(--pdx-accent-ink)}' +
+      '.pdx-sel{display:flex;justify-content:space-between;gap:10px;background:var(--pdx-sunk);border:1px solid var(--pdx-line);border-radius:10px;padding:10px 12px;font-size:.92rem}' +
+      '.pdx-legal{max-height:min(46vh,380px);overflow-y:auto;border:1px solid var(--pdx-line);border-radius:10px;padding:12px 14px;background:var(--pdx-bg);font-size:.88rem;display:grid;gap:8px}' +
+      '.pdx-legal h4{margin:4px 0 0;font:700 .8rem/1.3 var(--pdx-font);text-transform:uppercase;letter-spacing:.06em;color:var(--pdx-muted)}.pdx-legal ul{margin:0;padding-left:18px;display:grid;gap:4px}' +
+      '.pdx-linkrow{display:flex;flex-wrap:wrap;gap:4px 16px;justify-content:center}' +
+      '.pdx-link{background:none;border:0;padding:6px 0;margin:0;color:var(--pdx-accent);font:600 .9rem/1.3 var(--pdx-font);text-decoration:underline;cursor:pointer;width:auto;min-height:0;box-shadow:none}' +
+      '.pdx-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace!important;letter-spacing:.08em;text-transform:uppercase}' +
       '.pdx-toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--pdx-fg);color:var(--pdx-surface);padding:10px 16px;border-radius:8px;font:500 .88rem/1.4 var(--pdx-font);z-index:' + (cfg.z + 10) + ';max-width:calc(100vw - 32px);box-shadow:0 8px 24px rgba(0,0,0,.25)}' +
       '.pdx-toast[hidden]{display:none}' +
       '.pdx-as{display:none}' +
@@ -2834,8 +2847,10 @@ window.PDX = window.PDX || (function () {
   // a: { ready, signedIn, state:'active'|'expired'|'free'|'checking'|'error', plan:'semester'|'lifetime', expiresAt, semName }
   function label(a) {
     if (!a.ready) return { long: '…', short: '', pro: false, aria: 'Checking your account' };
-    if (!a.signedIn) return { long: 'Sign in', short: '', pro: false, aria: 'Sign in or create an account' };
+    if (!a.signedIn) return { long: 'Get started', short: '', pro: false, aria: 'Get started: create an account or sign in' };
     if (a.state === 'active' && a.plan === 'lifetime') return { long: 'Lifetime', short: '', pro: true, aria: 'Account: Lifetime access' };
+    if (a.state === 'active' && a.plan === 'beta') { var bd = daysLeft(a.expiresAt); return { long: 'Beta · ' + bd + 'd', short: bd + 'd', pro: true, aria: 'Account: beta access, ' + plural(bd, 'day') + ' remaining' }; }
+    if (a.state === 'expired' && a.plan === 'beta') return { long: 'Beta ended', short: '', pro: false, expired: true, aria: 'Account: your beta access has ended' };
     if (a.state === 'active') { var d = daysLeft(a.expiresAt); return { long: (a.semName || 'Semester') + ' · ' + d + 'd', short: d + 'd', pro: true, aria: 'Account: ' + (a.semName || 'Semester') + ', ' + plural(d, 'day') + ' remaining' }; }
     if (a.state === 'expired') return { long: 'Renew', short: '', pro: false, expired: true, aria: 'Account: your pass has expired' };
     return { long: 'Account', short: '', pro: false, aria: 'Account' };
@@ -2849,6 +2864,11 @@ window.PDX = window.PDX || (function () {
     if (a.state === 'error') return { kind: 'bad', title: 'We could not check your pass right now', text: a.errorText || 'Check your connection and try again.' };
     if (a.state === 'checking') return { kind: 'hint', title: 'Checking your pass…', text: '' };
     if (a.state === 'active' && a.plan === 'lifetime') return { kind: 'ok', title: a.lifeName || 'Lifetime Pass', text: 'Full access · no expiration' + (a.purchasedAt ? ' · purchased ' + fmtDate(a.purchasedAt) : '') };
+    if (a.state === 'active' && a.plan === 'beta') {
+      var bd = daysLeft(a.expiresAt);
+      return { kind: 'ok', title: 'Beta access · ' + plural(bd, 'day') + ' remaining', meter: bd / 60, low: bd <= 7, text: 'Free beta access until ' + fmtDate(a.expiresAt) + '. If you buy a Semester Pass, its 6 months start when beta access ends.' };
+    }
+    if (a.state === 'expired' && a.plan === 'beta') return { kind: 'bad', title: 'Beta access ended', text: 'Ended ' + fmtDate(a.expiresAt) + '. ' + (a.freeText || '') };
     if (a.state === 'active') {
       var d = daysLeft(a.expiresAt), term = a.termDays || 183;
       return { kind: 'ok', title: sem + ' · ' + plural(d, 'day') + ' remaining', meter: d / term, low: d <= 14, text: 'Full access until ' + fmtDate(a.expiresAt) + (a.purchasedAt ? ' · first purchased ' + fmtDate(a.purchasedAt) : '') };
@@ -2892,8 +2912,124 @@ window.PDX = window.PDX || (function () {
     return app;
   }
 
+  /* ================= v3: one flow for every PharmDigit app ================= */
+  var APPS_ALL = 'PharmDosage, PharmCalculation, PharmPK and PharmRx';
+  var CHK_IC = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>';
+  var KEY_IC = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2L20 3M16 7l3 3M14 9l2 2"/></svg>';
+
+  /* Get started: the single entry point for creating an account or signing in.
+     o: { app, freeText, plan:{name,price}, code, onChoose(mode), onPlans, onBeta } */
+  function getStarted(o) {
+    o = o || {};
+    var buying = !!o.plan, redeeming = !!o.code;
+    var opt = function (mode, cls, ic, t, s) { return '<button type="button" class="pdx-opt' + cls + '" data-pdx-gs="' + mode + '"><span class="pdx-oic">' + ic + '</span><span><b>' + t + '</b><small>' + s + '</small></span></button>'; };
+    modal('getstarted',
+      '<h2 id="pdx-title">' + (buying || redeeming ? 'Almost there' : 'Get started') + '</h2>' +
+      '<p class="pdx-small">' + esc(buying ? 'Your pass is saved to your account, so it works on any device and can be restored later.'
+        : redeeming ? 'Beta access is saved to your account, so it works on any device.'
+        : 'Create a free account or sign in. ' + (o.freeText || '')) + '</p>' +
+      (buying ? '<div class="pdx-sel"><span>Selected plan: <b>' + esc(o.plan.name) + '</b></span><b>' + esc(o.plan.price || '') + '</b></div>' : '') +
+      (redeeming ? '<div class="pdx-sel"><span>Beta code: <b class="pdx-code">' + esc(o.code) + '</b></span></div>' : '') +
+      '<div class="pdx-opts">' +
+        opt('signup', ' primary', USER_IC, 'Create a free account', 'New to ' + esc(o.app || 'PharmDigit') + '. Takes about a minute.') +
+        opt('signin', '', CHK_IC, 'Sign in', 'I already have an account, including from another PharmDigit app.') +
+      '</div>' +
+      '<div class="pdx-linkrow">' +
+        (!buying && !redeeming && o.onBeta ? '<button type="button" class="pdx-link" data-pdx-l="beta">Have a beta code?</button>' : '') +
+        (o.onPlans ? '<button type="button" class="pdx-link" data-pdx-l="plans">' + (buying ? 'Back to plans' : 'View plans and prices') + '</button>' : '') +
+      '</div>',
+      function (b) {
+        $$('[data-pdx-gs]', b).forEach(function (x) { x.addEventListener('click', function () { o.onChoose(x.dataset.pdxGs); }); });
+        $$('[data-pdx-l]', b).forEach(function (x) { x.addEventListener('click', function () { close(); (x.dataset.pdxL === 'beta' ? o.onBeta : o.onPlans)(); }); });
+      });
+  }
+
+  /* Purchase disclaimer: shown every time a purchase starts, after sign-in and before Stripe.
+     o: { app, plan:{name,price,term}, legalHtml, onAgree(), onBack } */
+  function disclaimer(o) {
+    o = o || {};
+    modal('disclaimer',
+      '<h2 id="pdx-title">Before you purchase</h2>' +
+      '<div class="pdx-sel"><span><b>' + esc(o.plan.name) + '</b>' + (o.plan.term ? ' · ' + esc(o.plan.term) : '') + '</span><b>' + esc(o.plan.price || '') + '</b></div>' +
+      '<p class="pdx-small">Please read and accept the following before continuing to secure checkout.</p>' +
+      '<div class="pdx-legal" tabindex="0">' + (o.legalHtml || '') + '</div>' +
+      '<label class="pdx-check"><input type="checkbox" id="pdx-agree"><span>I have read and agree to this disclaimer and the ' + esc(o.app || 'PharmDigit') + ' Terms of Use and Privacy Policy.</span></label>' +
+      '<p class="pdx-err" id="pdx-derr" role="alert"></p>' +
+      '<div class="pdx-row"><button class="pdx-btn primary" type="button" id="pdx-agree-go" disabled>Agree &amp; continue to checkout</button>' +
+      (o.onBack ? '<button class="pdx-btn ghost" type="button" id="pdx-dback">Back to plans</button>' : '') + '</div>' +
+      '<p class="pdx-small pdx-muted">Payments are processed securely by Stripe. PharmDigit never sees your card number. One-time payment; nothing renews automatically.</p>',
+      function (b) {
+        var c = $('#pdx-agree', b), g = $('#pdx-agree-go', b), bk = $('#pdx-dback', b);
+        c.addEventListener('change', function () { g.disabled = !c.checked; });
+        g.addEventListener('click', function () {
+          if (!c.checked) return;
+          g.disabled = true; g.textContent = 'Opening secure checkout…';
+          Promise.resolve().then(o.onAgree).then(null, function (x) { g.disabled = false; g.textContent = 'Agree & continue to checkout'; $('#pdx-derr', b).textContent = (x && x.message) || 'Checkout could not start. You were not charged.'; });
+        });
+        if (bk) bk.addEventListener('click', function () { close(); o.onBack(); });
+      });
+  }
+
+  /* Beta code: o: { code, signedIn, onRedeem(code) -> Promise<{expiresAt}>, onDone } */
+  var BETA_URL = 'https://us-central1-pharmdosage.cloudfunctions.net/redeemBetaCode';
+  function redeemBeta(idToken, code) {
+    return fetch(BETA_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken }, body: JSON.stringify({ code: code }) })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok || !j.ok) throw new Error(j.error || 'The code could not be redeemed. Please try again.'); return j; }); },
+        function () { throw new Error('Could not reach PharmDigit. Check your connection and try again.'); });
+  }
+  function betaDialog(o) {
+    o = o || {};
+    modal('beta',
+      '<h2 id="pdx-title">Redeem a beta code</h2>' +
+      '<p class="pdx-small">A beta code gives free access to ' + APPS_ALL + ' for a limited time. ' + (o.signedIn ? '' : 'You will create an account or sign in next, so your access works on any device.') + '</p>' +
+      '<form class="pdx-form" id="pdx-beta" novalidate><div class="pdx-field"><label for="pdx-code">Beta code</label><input id="pdx-code" class="pdx-code" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" required></div>' +
+      '<p class="pdx-err" id="pdx-berr" role="alert"></p>' +
+      '<div class="pdx-row"><button class="pdx-btn primary" type="submit" id="pdx-bgo">' + KEY_IC + (o.signedIn ? 'Redeem code' : 'Continue') + '</button><button class="pdx-btn ghost" type="button" data-pdx-bx>Cancel</button></div></form>',
+      function (b) {
+        var inp = $('#pdx-code', b), er = $('#pdx-berr', b), go = $('#pdx-bgo', b);
+        if (o.code) inp.value = o.code;
+        if (o.error) er.textContent = o.error;
+        $('[data-pdx-bx]', b).addEventListener('click', close);
+        $('#pdx-beta', b).addEventListener('submit', function (e) {
+          e.preventDefault(); er.textContent = '';
+          var code = inp.value.trim().toUpperCase();
+          if (!/^[A-Z0-9_-]{3,40}$/.test(code)) { er.textContent = 'Enter the beta code exactly as you received it.'; inp.focus(); return; }
+          go.disabled = true; go.lastChild.textContent = o.signedIn ? 'Checking…' : 'Continue';
+          Promise.resolve().then(function () { return o.onRedeem(code); }).then(function (res) {
+            if (res && res.expiresAt) betaDone(res, o.onDone);
+          }, function (x) { go.disabled = false; go.lastChild.textContent = o.signedIn ? 'Redeem code' : 'Continue'; er.textContent = (x && x.message) || 'The code could not be redeemed.'; });
+        });
+      });
+  }
+  function betaDone(res, onDone) {
+    var kept = res.kept && res.kept.length;
+    modal('betadone',
+      '<h2 id="pdx-title">Beta access is on</h2>' +
+      '<div class="pdx-fb ok"><span class="ttl">Free access until ' + fmtDate(res.expiresAt) + '</span><span>' + APPS_ALL + ' are unlocked for ' + plural(daysLeft(res.expiresAt), 'day') + '.' + (kept ? ' Apps where you already have a paid pass keep that pass.' : '') + '</span></div>' +
+      '<p class="pdx-small pdx-muted">Your access end date is always shown in Account. When beta access ends, the free questions remain available and you can buy a pass at any time.</p>' +
+      '<div class="pdx-row"><button class="pdx-btn primary" type="button" id="pdx-bok">Start studying</button></div>',
+      function (b) { $('#pdx-bok', b).addEventListener('click', close); }, { onClose: onDone });
+  }
+
+  /* Standard account dialog. o: { app, email, status, plan, state, onPlans, onBeta, onSignOut, onRefresh, note, extraHtml, onMount } */
+  function account(o) {
+    var acts = [];
+    var paid = o.state === 'active' && (o.plan === 'semester' || o.plan === 'lifetime');
+    if (!(o.state === 'active' && o.plan === 'lifetime') && o.onPlans) acts.push({ label: o.state === 'active' ? (o.plan === 'beta' ? 'View plans' : 'Extend or upgrade') : (o.state === 'expired' && o.plan !== 'beta') ? 'Renew a pass' : 'View plans', primary: true, onClick: function () { close(); o.onPlans(); } });
+    if (!paid && o.state !== 'active' && o.onBeta) acts.push({ label: 'Redeem a beta code', onClick: function () { close(); o.onBeta(); } });
+    if (o.onRefresh && (o.state === 'error' || o.state === 'checking')) acts.push({ label: 'Check my pass again', ghost: true, onClick: function () { o.onRefresh(); } });
+    acts.push({ label: 'Sign out', id: 'pdx-signout', onClick: function () { close(); o.onSignOut(); } });
+    openAccount({ title: 'Your account', email: o.email, status: o.status, actions: acts,
+      note: o.note || 'Your pass is saved to your account and works on any device where you sign in. Each PharmDigit app is purchased separately; beta codes unlock all four.',
+      extraHtml: o.extraHtml, onMount: o.onMount });
+  }
+
+  /* Standard "signed out" message so every app says the same thing */
+  function signedOut(freeText) { toast('Signed out.' + (freeText ? ' ' + freeText : '')); }
+
   return { init: init, firebaseApp: firebaseApp, modal: modal, close: close, isOpen: isOpen, toast: toast, openAuth: openAuth, openAccount: openAccount,
-    statusCard: statusCard, passStatus: passStatus, label: label, buttonHTML: buttonHTML, daysLeft: daysLeft, fmtDate: fmtDate, every: every, esc: esc, USER_IC: USER_IC };
+    statusCard: statusCard, passStatus: passStatus, label: label, buttonHTML: buttonHTML, daysLeft: daysLeft, fmtDate: fmtDate, every: every, esc: esc, USER_IC: USER_IC,
+    getStarted: getStarted, disclaimer: disclaimer, betaDialog: betaDialog, betaDone: betaDone, redeemBeta: redeemBeta, account: account, signedOut: signedOut, APPS_ALL: APPS_ALL, version: 3 };
 })();
 
 PDX.init({ accent: '#0d9488', accentInk: '#ffffff', font: "'Inter',system-ui,-apple-system,sans-serif", display: "'Lora',Georgia,serif", z: 2500 });
@@ -2962,7 +3098,7 @@ PDX.init({ accent: '#0d9488', accentInk: '#ffffff', font: "'Inter',system-ui,-ap
   function entActive(e) {
     if (!e) return false;
     if (e.planType === 'lifetime') return true;
-    if (e.planType === 'semester' && e.expiresAt && typeof e.expiresAt.toMillis === 'function') return e.expiresAt.toMillis() > Date.now();
+    if ((e.planType === 'semester' || e.planType === 'beta') && e.expiresAt && typeof e.expiresAt.toMillis === 'function') return e.expiresAt.toMillis() > Date.now();
     return false;
   }
   function entLabel() {
@@ -2970,7 +3106,7 @@ PDX.init({ accent: '#0d9488', accentInk: '#ffffff', font: "'Inter',system-ui,-ap
     if (!entActive(e)) return 'No paid plan yet';
     if (e.planType === 'lifetime') return 'Lifetime Access';
     var d = PDX.daysLeft(e.expiresAt.toMillis());
-    return '6-Month Access until ' + e.expiresAt.toDate().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) + ' (' + d + (d === 1 ? ' day' : ' days') + ' left)';
+    return (e.planType === 'beta' ? 'Beta access' : '6-Month Access') + ' until ' + e.expiresAt.toDate().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) + ' (' + d + (d === 1 ? ' day' : ' days') + ' left)';
   }
 
   /* ---------- styles for the sign-in dialog and status banner ---------- */
@@ -3011,21 +3147,30 @@ PDX.init({ accent: '#0d9488', accentInk: '#ffffff', font: "'Inter',system-ui,-ap
     return c in map ? map[c] : 'Something went wrong. Please try again.';
   }
   function fail(er) { var m = friendly(er); var x = new Error(m); x.silent = !m; throw x; }
-  function openSignIn(plan, mode) {
+  var PLAN_INFO = { semester: { name: '6-Month Access', price: '$7.99', term: '6 months of full access' }, lifetime: { name: 'Lifetime Access', price: '$14.99', term: 'no expiration' } };
+  function openGetStarted(o) {
     if (!enabled) return;
-    S.pendingPlan = plan || null;
+    o = o || {};
+    PDX.getStarted({ app: 'PharmDosage', freeText: 'The first 50 questions never need an account.',
+      plan: o.plan ? PLAN_INFO[o.plan] : null, code: o.code || null,
+      onChoose: function (mode) { openSignIn(o.plan || null, mode, o.code || null); },
+      onPlans: goPlans, onBeta: function () { openBeta(); } });
+  }
+  function openSignIn(plan, mode, code) {
+    if (!enabled) return;
+    S.pendingPlan = plan || null; S.pendingCode = code || null;
     PDX.openAuth({
       mode: mode || 'signin',
-      titleSignin: plan ? 'Sign in to purchase' : 'Sign in',
-      titleSignup: plan ? 'Create an account to purchase' : 'Create your account',
-      noteSignin: plan ? 'Your account saves your purchase so you can unlock the Q-Bank on any device. The free 50 questions never need an account.'
+      titleSignin: 'Sign in',
+      titleSignup: 'Create your account',
+      noteSignin: code ? 'Create an account or sign in to redeem your beta code. Your code is saved.' : plan ? 'Create an account or sign in to buy ' + PLAN_INFO[plan].name + '. Your selected plan is saved, and you will go straight to checkout.'
                        : 'Already purchased? Sign in with the same account you used to buy and your access is restored automatically. No new payment is needed.',
-      noteSignup: 'Your account saves your purchase so you can unlock the Q-Bank on any device. The free 50 questions never need an account.',
+      noteSignup: code ? 'Create an account or sign in to redeem your beta code. Your code is saved.' : plan ? 'Create an account or sign in to buy ' + PLAN_INFO[plan].name + '. Your selected plan is saved, and you will go straight to checkout.' : 'Your pass is saved to your account, so it works on any device.',
       google: true, minPw: 6,
       onGoogle: function () { return auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(fail); },
       onForgot: function (em) { return auth.sendPasswordResetEmail(em).then(function () { return 'If an account exists for that email, a reset link is on its way. If you don\'t see it within a few minutes, please check your Junk or Spam folder.'; }, fail); },
       onSubmit: function (d) { return (d.mode === 'signin' ? auth.signInWithEmailAndPassword(d.email, d.password) : auth.createUserWithEmailAndPassword(d.email, d.password)).catch(fail); },
-      onClose: function () { S.pendingPlan = null; }
+      onClose: function () { S.pendingPlan = null; S.pendingCode = null; }
     });
   }
   function closeSignIn() { PDX.close(); }
@@ -3034,10 +3179,20 @@ PDX.init({ accent: '#0d9488', accentInk: '#ffffff', font: "'Inter',system-ui,-ap
   function startCheckout(plan) {
     var priceId = PRICE_IDS[plan];
     if (!priceId) { alert('Unknown plan.'); return Promise.resolve(); }
-    if (!S.user) { openSignIn(plan); return Promise.resolve(); }
+    if (!S.user) { openGetStarted({ plan: plan }); return Promise.resolve(); }
     if (S.entLoaded && entActive(S.ent)) { banner('You already have access: <strong>' + esc(entLabel()) + '</strong>. No new payment is needed.', 'info', 8000); return Promise.resolve(); }
     if (!S.entLoaded && !S.entError) { S.afterEnt = plan; banner('Checking your account…', 'info'); return Promise.resolve(); }
-    banner('Opening secure checkout…', 'info');
+    bannerEl.className = '';
+    PDX.disclaimer({ app: 'PharmDosage', plan: PLAN_INFO[plan], legalHtml: DOS_LEGAL, onBack: goPlans,
+      onAgree: function () { return goCheckout(plan); } });
+    return Promise.resolve();
+  }
+  var DOS_LEGAL = '<h4>Disclaimer</h4><p>PharmDosage is an independent, unofficial study aid. It is <strong>not affiliated with, endorsed by, or reviewed by NABP</strong> or any organization that administers the NAPLEX. Questions and explanations may contain errors or become outdated. Your results are a rough self-assessment signal only and are <strong>not predictive</strong> of your exam outcome.</p>' +
+    '<p><strong>For educational use only.</strong> Content is not medical or clinical advice and must not be used to guide patient care.</p>' +
+    '<h4>Terms of Use</h4><ul><li>Provided “as is,” for personal educational use, with no warranty of accuracy or fitness for any purpose.</li><li>The creators and distributors are not liable for any outcome connected to your use of this tool.</li><li>Paid plans are one-time payments processed by Stripe. 6-Month Access expires after the study period; Lifetime Access does not expire. Plans unlock PharmDosage only.</li></ul>' +
+    '<h4>Privacy</h4><ul><li>An account (Firebase Authentication) is needed only to purchase, redeem a beta code or restore access. Stripe processes payments; we never see your card details.</li><li>Your quiz history and scores stay in this browser.</li></ul>';
+  function goCheckout(plan) {
+    var priceId = PRICE_IDS[plan];
     return S.user.getIdToken().then(function (token) {
       return fetch(CHECKOUT_URL, {
         method: 'POST',
@@ -3052,9 +3207,19 @@ PDX.init({ accent: '#0d9488', accentInk: '#ffffff', font: "'Inter',system-ui,-ap
       } else {
         throw new Error((res.body && res.body.error) || 'Unable to start checkout.');
       }
-    }).catch(function (err) {
-      banner('Checkout could not start: ' + esc(err.message || 'please try again') + ' No payment was taken.', 'warn', 9000);
-    });
+    }, function () { throw new Error('Could not reach the checkout service. Check your connection and try again.'); });
+  }
+
+  /* ---------- beta codes (validated and activated by the redeemBetaCode function) ---------- */
+  function openBeta(code, error) {
+    if (!enabled) return;
+    PDX.betaDialog({ code: code, error: error, signedIn: !!S.user,
+      onRedeem: function (c) { if (!S.user) { PDX.close(); openGetStarted({ code: c }); return null; } return redeem(c); },
+      onDone: function () { PD.notify('access'); } });
+  }
+  function redeem(code) { return S.user.getIdToken().then(function (t) { return PDX.redeemBeta(t, code); }); }
+  function resumeBeta(code) {
+    redeem(code).then(function (res) { PDX.betaDone(res, function () { PD.notify('access'); }); }, function (e) { openBeta(code, e.message); });
   }
 
   /* ---------- entitlement listener ---------- */
@@ -3083,7 +3248,7 @@ PDX.init({ accent: '#0d9488', accentInk: '#ffffff', font: "'Inter',system-ui,-ap
     }
     if (S.waitingPayment) {
       if (entActive(S.ent)) { S.waitingPayment = false; banner('✓ Payment received. Your access is active: <strong>' + esc(entLabel()) + '</strong>. Thank you!', 'info', 10000); }
-      else if (S.authReady && !S.user) { banner('Payment received. Please <a href="#" onclick="PharmDigit.ui.openSignIn();return false;">sign in</a> with the account you used to purchase to unlock access.', 'warn'); }
+      else if (S.authReady && !S.user) { banner('Payment received. Please <a href="#" onclick="PharmDigit.ui.getStarted();return false;">sign in</a> with the account you used to purchase to unlock access.', 'warn'); }
     }
     refreshAccountViews();
     PD.notify('access');
@@ -3098,7 +3263,7 @@ PDX.init({ accent: '#0d9488', accentInk: '#ffffff', font: "'Inter',system-ui,-ap
     if (S.entError) return 'error';
     if (!S.entLoaded) return 'checking';
     if (entActive(S.ent)) return 'active';
-    if (S.ent && S.ent.planType === 'semester' && expMs()) return 'expired';
+    if (S.ent && (S.ent.planType === 'semester' || S.ent.planType === 'beta') && expMs()) return 'expired';
     return 'free';
   }
   function acctInfo() {
@@ -3112,28 +3277,26 @@ PDX.init({ accent: '#0d9488', accentInk: '#ffffff', font: "'Inter',system-ui,-ap
     var b = acctBox; if (!b || !document.body.contains(b)) return;
     if (!enabled || !S.authReady) { b.innerHTML = ''; return; }
     var l = PDX.label(acctInfo());
-    b.innerHTML = '<button class="acct-btn' + (l.pro ? ' pro' : '') + (l.expired ? ' hot' : '') + '" type="button" aria-label="' + esc(l.aria) + '" title="' + esc(S.user ? 'Signed in as ' + (S.user.email || 'your account') : 'Sign in to restore a purchase') + '">' + PDX.buttonHTML(l) + '</button>';
-    b.firstChild.addEventListener('click', function () { if (S.user) openAccount(); else openSignIn(null); });
+    b.innerHTML = '<button class="acct-btn' + (l.pro ? ' pro' : '') + (l.expired ? ' hot' : '') + '" type="button" aria-label="' + esc(l.aria) + '" title="' + esc(S.user ? 'Signed in as ' + (S.user.email || 'your account') : 'Get started: create an account or sign in') + '">' + PDX.buttonHTML(l) + '</button>';
+    b.firstChild.addEventListener('click', function () { if (S.user) openAccount(); else openGetStarted(); });
   }
   function goPlans() { if (typeof navigate === 'function') navigate('qbank/plans'); }
   function openAccount() {
-    if (!S.user) return openSignIn(null);
-    var a = acctInfo(), st = a.state, acts = [];
-    if (st === 'error') acts.push({ label: 'Try again', primary: true, onClick: function () { watchEntitlement(S.user.uid); PDX.close(); PDX.toast('Checking your plan…'); } });
-    else if (st !== 'active' && st !== 'checking') acts.push({ label: st === 'expired' ? 'Renew access' : 'See plans', primary: true, onClick: function () { PDX.close(); goPlans(); } });
-    acts.push({ label: 'Sign out', id: 'pdx-signout', onClick: function () { PDX.close(); PD.ui.signOut(); } });
-    PDX.openAccount({
-      email: S.user.email || 'your account',
+    if (!S.user) return openGetStarted();
+    var a = acctInfo(), st = a.state;
+    PDX.account({ email: S.user.email || 'your account', state: st, plan: a.plan,
       status: PDX.passStatus({ state: st, plan: a.plan, expiresAt: a.expiresAt, semName: '6-Month Access', lifeName: 'Lifetime Access', termDays: 183, freeText: a.freeText, errorText: a.errorText }),
-      actions: acts,
-      note: 'Your access is stored with your account and works on any device where you sign in. Quiz progress is saved on each device separately.'
-    });
+      onPlans: goPlans, onBeta: function () { openBeta(); },
+      onRefresh: function () { watchEntitlement(S.user.uid); PDX.close(); PDX.toast('Checking your pass…'); },
+      onSignOut: function () { PD.ui.signOut(); } });
   }
   function refreshAccountViews() { renderAcct(); if (PDX.isOpen('account')) openAccount(); }
 
   PD.ui = {
-    openSignIn: function () { openSignIn(null); },
-    signOut: function () { if (auth) auth.signOut().then(function () { PDX.toast('Signed out. The first 50 questions remain free.'); }); },
+    openSignIn: function () { openGetStarted(); },
+    getStarted: function () { openGetStarted(); },
+    openBeta: function () { openBeta(); },
+    signOut: function () { if (auth) auth.signOut().then(function () { PDX.signedOut('The free questions remain available.'); }); },
     notice: function (t) { banner(esc(t), 'info', 5000); },
     mountAccountButton: function (box) { acctBox = box; renderAcct(); },
     openAccount: openAccount,
@@ -3142,10 +3305,11 @@ PDX.init({ accent: '#0d9488', accentInk: '#ffffff', font: "'Inter',system-ui,-ap
       if (!enabled) return '';
       var st = 'font-size:.78rem;color:var(--muted);text-align:center;margin:10px 0 0;';
       if (!S.authReady) return '';
-      if (!S.user) return '<p style="' + st + '">Already purchased? <a href="#" onclick="PharmDigit.ui.openSignIn();return false;">Sign in</a> to restore access. An account is only needed to purchase or restore a purchase.</p>';
+      var beta = entActive(S.ent) ? '' : ' &middot; Have a beta code? <a href="#" onclick="PharmDigit.ui.openBeta();return false;">Redeem it</a>';
+      if (!S.user) return '<p style="' + st + '">Already have an account? <a href="#" onclick="PharmDigit.ui.getStarted();return false;">Get started</a> to sign in and restore access' + beta + '. No account is needed to view plans.</p>';
       return '<p style="' + st + '">Signed in as <strong>' + esc(S.user.email || 'your account') + '</strong> &middot; ' +
         (S.entError ? 'could not check your plan right now' : (S.entLoaded ? esc(entLabel()) : 'checking your plan…')) +
-        ' &middot; <a href="#" onclick="PharmDigit.ui.openAccount();return false;">Account</a> &middot; <a href="#" onclick="PharmDigit.ui.signOut();return false;">Sign out</a></p>';
+        ' &middot; <a href="#" onclick="PharmDigit.ui.openAccount();return false;">Account</a> &middot; <a href="#" onclick="PharmDigit.ui.signOut();return false;">Sign out</a>' + beta + '</p>';
     }
   };
 
@@ -3168,9 +3332,10 @@ PDX.init({ accent: '#0d9488', accentInk: '#ffffff', font: "'Inter',system-ui,-ap
     S.user = user; S.authReady = true;
     watchEntitlement(user ? user.uid : null);
     if (user && PDX.isOpen('auth')) {
-      var plan = S.pendingPlan; S.pendingPlan = null;
+      var plan = S.pendingPlan, code = S.pendingCode; S.pendingPlan = null; S.pendingCode = null;
       closeSignIn();
-      if (plan) { S.afterEnt = plan; banner('Checking your account…', 'info'); }
+      if (code) resumeBeta(code);
+      else if (plan) { S.afterEnt = plan; banner('Checking your account…', 'info'); }
       else { S.welcome = true; }
     }
     changed();
@@ -4622,12 +4787,7 @@ window.__QUESTIONS__ = [{"id":"ointments_1","topicId":"ointments","topicName":"O
   App.choosePlan = function (plan) {
     if (hasFullAccess()) { App.closePlans(); notice('You already have full access. No new payment is needed.'); return; }
     if (isChecking()) { notice('Checking your account… please try again in a moment.'); return; }
-    purchaseConsent = false; // ask again for each new purchase
-    if (!hasConsented()) {
-      pendingPlan = plan;
-      showConsentModal();
-      return;
-    }
+    // The purchase disclaimer is shown by the account adapter after sign-in, right before Stripe (same flow in every PharmDigit app).
     startPurchase(plan);
   };
   function startPurchase(plan) {
