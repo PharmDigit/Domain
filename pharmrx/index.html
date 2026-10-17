@@ -21042,18 +21042,29 @@ const RXA=(function(){
         <ul>${FEATURES().map(f=>`<li>${f}</li>`).join('')}${k==='lifetime'?'<li>All future PharmRx updates</li>':''}</ul>
         <button class="btn ${k==='lifetime'?'primary':''}" data-buy="${k}" ${life?'disabled':''}>${lbl}</button></div>`;};
     dlg('Unlock all of PharmRx',`${statusNote()}<div class="rx-plans">${card('semester')}${card('lifetime')}</div>
-      <label class="rx-consent"><input type="checkbox" id="rx-consent" ${consent?'checked':''}><span>I understand PharmRx is an educational study aid, not clinical guidance, and I agree to the <button class="link" type="button" data-rx-terms>Terms of Use</button>.</span></label>
+      <p class="note">Before checkout you will be asked to review and accept the PharmRx disclaimer and <button class="link" type="button" data-rx-terms>Terms of Use</button>.</p>
       <p class="rx-err" id="rx-perr" role="alert"></p>
       <p class="note">Payments are processed securely by Stripe; PharmDigit never sees your card number. A PharmRx pass does not unlock other PharmDigit apps.</p>`,
-      b=>{$('#rx-consent',b).onchange=e=>{consent=e.target.checked;$('#rx-perr',b).textContent='';};
+      b=>{
         $$('[data-buy]',b).forEach(x=>x.onclick=()=>buy(x.dataset.buy));},{wide:true});
   }
   function showTerms(){
     dlg('Terms of Use',`<div class="agree">${TERMS}</div><div class="row" style="margin-top:14px"><button class="btn primary" data-rx-plans>Back to plans</button></div>`,null,{wide:true});
   }
+  // Purchase disclaimer: shown each time someone starts a purchase; checkout continues only after they tick and agree.
+  function confirmTerms(plan){
+    const p=RX_PLANS[plan];
+    dlg('Before you purchase',`<p class="note">${p.name}${p.price?' · '+p.price:''} · one-time payment. Please read and accept the following before continuing to checkout.</p>
+      <div class="agree" style="margin-top:12px">${TERMS}</div>
+      <label class="rx-consent" style="margin-top:16px"><input type="checkbox" id="rx-tc"><span>I have read and agree to this disclaimer and the PharmRx Terms of Use.</span></label>
+      <div class="row" style="margin-top:14px"><button class="btn primary" id="rx-tc-go" disabled>Agree &amp; continue to checkout</button><button class="btn" data-rx-plans>Back to plans</button></div>`,
+      b=>{const c=$('#rx-tc',b),g=$('#rx-tc-go',b);
+        c.onchange=()=>{g.disabled=!c.checked;};
+        g.onclick=()=>{if(!c.checked)return;consent=true;buy(plan);};},{wide:true});
+  }
   async function buy(plan){
     const b=$('#rxdlg .modal-b'),er=b&&$('#rx-perr',b);
-    if(!consent){if(er){er.textContent='Please tick the box to confirm you agree before continuing.';const c=$('#rx-consent',b);c&&c.focus();}else openPlans();return;}
+    if(!consent)return confirmTerms(plan);
     if(premium()&&ent.plan==='lifetime'){if(er)er.textContent='You already have a Lifetime Pass.';return;}
     if(!user){pendingPlan=plan;return openAuth('signup',`Create an account or sign in to buy the ${RX_PLANS[plan].name}. Your pass is tied to this account, so it works on any device.`);}
     if(!fb||!fb.auth){dlg('Checkout could not start','<p class="rx-err">The sign-in service is not available right now. Reload the page and try again.</p>');return;}
@@ -21193,7 +21204,7 @@ const RXA=(function(){
 })();
 
 go('home');
-agreementGate();
+// Disclaimer now appears only before checkout (see RXA.confirmTerms); nothing is shown on first open.
 RXA.start();
 </script>
 </body>
