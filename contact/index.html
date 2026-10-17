@@ -4622,6 +4622,7 @@ window.__QUESTIONS__ = [{"id":"ointments_1","topicId":"ointments","topicName":"O
   App.choosePlan = function (plan) {
     if (hasFullAccess()) { App.closePlans(); notice('You already have full access. No new payment is needed.'); return; }
     if (isChecking()) { notice('Checking your account… please try again in a moment.'); return; }
+    purchaseConsent = false; // ask again for each new purchase
     if (!hasConsented()) {
       pendingPlan = plan;
       showConsentModal();
@@ -4648,13 +4649,12 @@ window.__QUESTIONS__ = [{"id":"ointments_1","topicId":"ointments","topicName":"O
   }
 
   /* ---------------- Consent Modal ---------------- */
-  var CONSENT_KEY = "naplex_qbank_consent_v1";
-  function hasConsented() {
-    try { return localStorage.getItem(CONSENT_KEY) === "1"; }
-    catch (e) { return true; } // if storage is unavailable, don't block usage
-  }
+  /* Purchase disclaimer: required every time a purchase is started (never on first open or during the
+     free questions). Acceptance lasts only for this purchase attempt; sign-in in between keeps it. */
+  var purchaseConsent = false;
+  function hasConsented() { return purchaseConsent; }
   function grantConsent() {
-    try { localStorage.setItem(CONSENT_KEY, "1"); } catch (e) { /* ignore */ }
+    purchaseConsent = true;
     closeConsent();
   }
   function closeConsent() {
@@ -4676,6 +4676,7 @@ window.__QUESTIONS__ = [{"id":"ointments_1","topicId":"ointments","topicName":"O
           '<div class="agree-body">' +
             '<h4>Disclaimer</h4>' +
             '<p>This is an independent, unofficial study aid \u2014 it is <strong>not affiliated with, endorsed by, or reviewed by NABP</strong> or any organization that administers the NAPLEX. Questions and explanations may contain errors or become outdated. Your results here are a rough self-assessment signal only and are <strong>not predictive</strong> of your actual exam outcome. Always defer to your program\u2019s official curriculum and board-approved review materials.</p>' +
+            '<p><strong>For educational use only.</strong> Content is not medical or clinical advice and must not be used to guide patient care.</p>' +
             '<h4>Terms of Use</h4>' +
             '<ul>' +
               '<li>Provided \u201cas is,\u201d for personal educational use, with no warranty of accuracy or fitness for any purpose.</li>' +
@@ -4712,6 +4713,8 @@ window.__QUESTIONS__ = [{"id":"ointments_1","topicId":"ointments","topicName":"O
     closeConsent();
   };
   App.agreeConsent = function () {
+    var box = document.getElementById("agreeCheckbox");
+    if (!box || !box.checked) return;
     grantConsent();
     var plan = pendingPlan; pendingPlan = null;
     if (plan) startPurchase(plan);
