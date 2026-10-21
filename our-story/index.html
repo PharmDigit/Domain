@@ -1046,6 +1046,21 @@ footer { background: var(--gray-900); color: rgba(255,255,255,.5); padding: 56px
 #qbank .qtext{font-size:1.05rem;}
 #qbank .grid-3{grid-template-columns:1fr;}}
 
+/* Phone tab bar for PharmDosage (same design as PharmTherapy and PharmCalculation) */
+#qbank .qb-tabbar{display:none}
+@media (max-width:760px){
+  #qbank nav.tabs > button{display:none}
+  #qbank nav.tabs{background:none;padding:0;justify-content:flex-end}
+  #qbank nav.tabs .acct{margin-left:auto;position:static;background:none}
+  #qbank .qb-tabbar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(255,253,249,.97);backdrop-filter:blur(8px);border-top:1px solid var(--line);box-shadow:0 -4px 14px rgba(32,48,46,.06);padding:4px max(4px,env(safe-area-inset-right,0px)) calc(4px + env(safe-area-inset-bottom,0px)) max(4px,env(safe-area-inset-left,0px))}
+  #qbank .qb-tabbar button{display:grid;justify-items:center;gap:2px;background:none;border:0;padding:6px 2px 4px;border-radius:10px;color:var(--ink-soft);font:600 11px/1.2 Inter,-apple-system,'Segoe UI',sans-serif;min-width:0;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:none}
+  #qbank .qb-tabbar button span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #qbank .qb-tabbar button[aria-current="page"]{color:var(--teal)}
+  #qbank .qb-tabbar button[aria-current="page"] svg{stroke-width:2.1}
+  #qbank .qb-tabbar button:focus-visible{outline:2px solid var(--teal);outline-offset:-2px}
+  #page-qbank{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
+}
+@media print{#qbank .qb-tabbar{display:none!important}}
 /* Mobile: keep all five Q-Bank tabs reachable on narrow screens */
 @media (max-width: 600px) {
   #qbank nav.tabs { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -3856,6 +3871,26 @@ window.__QUESTIONS__ = [{"id":"ointments_1","topicId":"ointments","topicName":"O
     });
     var ui = window.PharmDigit && window.PharmDigit.ui;
     if (ui && ui.mountAccountButton) { var acctBox = el('<div class="acct"></div>'); nav.appendChild(acctBox); ui.mountAccountButton(acctBox); }
+    // Phone tab bar (same design as PharmTherapy and PharmCalculation)
+    var bar = $("#qb-tabbar");
+    if (!bar) { bar = el('<nav class="qb-tabbar" id="qb-tabbar" aria-label="Q-Bank sections"></nav>'); $("#qbank").appendChild(bar); }
+    var IC = {
+      dashboard: '<path d="M3 9.5 10 4l7 5.5V16a1 1 0 0 1-1 1h-3.5v-4.5h-5V17H4a1 1 0 0 1-1-1z"/>',
+      setup: '<rect x="4" y="3.5" width="12" height="14" rx="1.5"/><path d="M7.5 3.5V2.5h5v1M7 9l1.5 1.5L11.5 7.5M7 13.5h6"/>',
+      progress: '<path d="M3 17h14M5.5 17v-5M10 17V7M14.5 17v-8"/>',
+      manual: '<path d="M2.5 4.5c2.5-.8 5-.6 7.5.9v11c-2.5-1.5-5-1.7-7.5-.9zM17.5 4.5c-2.5-.8-5-.6-7.5.9v11c2.5-1.5 5-1.7 7.5-.9z"/>',
+      plans: '<rect x="3" y="5" width="14" height="10.5" rx="1.5"/><path d="M3 8.5h14M6 12.5h3"/>'
+    };
+    bar.innerHTML = "";
+    tabs.forEach(function (t) {
+      var isActive = route === t.id || (t.id === "setup" && (route === "quiz" || route === "results"));
+      var b = el('<button type="button"' + (isActive ? ' aria-current="page"' : "") + ' aria-label="' + esc(t.label) + '"><svg width="22" height="22" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + IC[t.id] + "</svg><span>" + esc(t.label) + "</span></button>");
+      b.addEventListener("click", function () {
+        if (route === "quiz" && !confirm("Leave this quiz? Your progress on this attempt will be lost.")) return;
+        navigate(t.id === "setup" ? "setup" : t.id);
+      });
+      bar.appendChild(b);
+    });
   }
 
   function navigate(r) {
