@@ -450,7 +450,7 @@ mark{background:var(--mark);color:#3d3200;border-radius:3px}
    PharmDigit shared account UI  (PDX v3)
    Same Get started, sign-in, plans, purchase disclaimer, beta code,
    account and "days remaining" experience in PharmDosage,
-   PharmCalculation, PharmPK and PharmRx.
+   PharmCalculation, PharmPK, PharmTherapy and PharmRx.
    UI only: every app keeps its own Firebase Auth, Stripe checkout,
    pass storage and access rules. Each app calls PDX with callbacks
    that run its existing logic.
@@ -753,7 +753,7 @@ window.PDX = window.PDX || (function () {
   }
 
   /* ================= v3: one flow for every PharmDigit app ================= */
-  var APPS_ALL = 'PharmDosage, PharmCalculation, PharmPK and PharmRx';
+  var APPS_ALL = 'PharmDosage, PharmCalculation, PharmPK, PharmTherapy and PharmRx';
   var CHK_IC = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>';
   var KEY_IC = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2L20 3M16 7l3 3M14 9l2 2"/></svg>';
 
@@ -860,7 +860,7 @@ window.PDX = window.PDX || (function () {
     if (o.onRefresh && (o.state === 'error' || o.state === 'checking')) acts.push({ label: 'Check my pass again', ghost: true, onClick: function () { o.onRefresh(); } });
     acts.push({ label: 'Sign out', id: 'pdx-signout', onClick: function () { close(); o.onSignOut(); } });
     openAccount({ title: 'Your account', email: o.email, status: o.status, actions: acts,
-      note: o.note || 'Your pass is saved to your account and works on any device where you sign in. Each PharmDigit app is purchased separately; beta codes unlock all four.',
+      note: o.note || 'Your pass is saved to your account and works on any device where you sign in. Each PharmDigit app is purchased separately; beta codes unlock all five.',
       extraHtml: o.extraHtml, onMount: o.onMount });
   }
 
