@@ -22,6 +22,7 @@ const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
 //   pharmpk   -> Firestore pharmpk_entitlements/{uid}    (PharmPK)
 //   pharmrx   -> Firestore pharmrx_entitlements/{uid}    (PharmRx)
 //   pharmtherapy -> Firestore pharmtherapy_entitlements/{uid} (PharmTherapy)
+//   pharmaction -> Firestore pharmaction_entitlements/{uid} (PharmAction, Principles of Drug Action)
 const PRICES = {
   // PharmDosage Q-Bank (unchanged)
   "price_1UO8biRpvhB9DoxSXlzJDynA": { app: "qbank", planType: "semester" },
@@ -38,6 +39,9 @@ const PRICES = {
   // PharmTherapy
   "price_1USnWTRpvhB9DoxS6JilWji8": { app: "pharmtherapy", planType: "semester" },
   "price_1USnX3RpvhB9DoxSv49L4tEH": { app: "pharmtherapy", planType: "lifetime" },
+  // PharmAction (Principles of Drug Action)
+  "price_1UT5uhRpvhB9DoxSAmb0fJGr": { app: "pharmaction", planType: "semester" },
+  "price_1UT5vPRpvhB9DoxS7590Eehi": { app: "pharmaction", planType: "lifetime" },
 };
 
 const APPS = {
@@ -69,6 +73,12 @@ const APPS = {
     successUrl:
       "https://www.pharmdigit.com/pharmtherapy/?pt_checkout=success&session_id={CHECKOUT_SESSION_ID}",
     cancelUrl: "https://www.pharmdigit.com/pharmtherapy/?pt_checkout=cancel",
+  },
+  pharmaction: {
+    collection: "pharmaction_entitlements",
+    successUrl:
+      "https://www.pharmdigit.com/pharmaction/?pt_checkout=success&session_id={CHECKOUT_SESSION_ID}",
+    cancelUrl: "https://www.pharmdigit.com/pharmaction/?pt_checkout=cancel",
   },
 };
 
@@ -304,6 +314,8 @@ const APP_ALIASES = {
   pharmpk: "pharmpk",
   pharmrx: "pharmrx",
   pharmtherapy: "pharmtherapy", pharmacotherapy: "pharmtherapy",
+  pharmaction: "pharmaction", drugaction: "pharmaction",
+  principlesofdrugaction: "pharmaction", pda: "pharmaction",
 };
 
 class BetaError extends Error {
