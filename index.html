@@ -229,27 +229,27 @@ ul, ol { list-style: none; }
 .nav-mobile a { font-size: 15px; font-weight: 500; color: var(--gray-700); padding: 11px 14px; border-radius: var(--radius-sm); transition: all var(--transition); cursor: pointer; }
 .nav-mobile a:hover { color: var(--teal); background: var(--teal-pale); }
 
-/* ── PharmCrush promo pill next to the PharmDigit logo ── */
-.pc-ad{display:inline-flex;align-items:center;gap:9px;margin:0 auto 0 16px;padding:4px 14px 4px 4px;border-radius:999px;text-decoration:none;
+/* ── PharmCrush game link next to the PharmDigit logo ── */
+.pd-game{display:inline-flex;align-items:center;gap:9px;margin:0 auto 0 16px;padding:4px 14px 4px 4px;border-radius:999px;text-decoration:none;
   background:linear-gradient(120deg,#fff4d6,#ffe4f0 55%,#e0f2ff);border:1.5px solid #f5b83d;color:#1f2937;position:relative;white-space:nowrap;
-  box-shadow:0 2px 8px rgba(225,29,116,.12);animation:pcGlow 2.4s ease-in-out infinite;transition:transform .2s}
-.pc-ad:hover{transform:translateY(-1px) scale(1.03)}
-.pc-ad img{width:34px;height:34px;border-radius:9px;display:block;animation:pcWiggle 4s ease-in-out infinite}
-.pc-ad .pc-txt{display:flex;flex-direction:column;line-height:1.15}
-.pc-ad .pc-name{font:800 14px/1.1 var(--font-sans);color:#d61f69;letter-spacing:-.01em}
-.pc-ad .pc-sub{font:600 11.5px/1.2 var(--font-sans);color:#475569}
-.pc-ad .pc-new{position:absolute;top:-8px;right:-6px;background:#e11d48;color:#fff;font:800 9.5px/1 var(--font-sans);letter-spacing:.06em;padding:4px 6px;border-radius:999px;
-  box-shadow:0 2px 6px rgba(225,29,72,.35);animation:pcBlink 1.1s ease-in-out infinite}
-@keyframes pcGlow{0%,100%{box-shadow:0 0 0 0 rgba(245,184,61,.55),0 2px 8px rgba(225,29,116,.12)}50%{box-shadow:0 0 0 7px rgba(245,184,61,0),0 2px 8px rgba(225,29,116,.12)}}
-@keyframes pcBlink{0%,100%{opacity:1}50%{opacity:.35}}
-@keyframes pcWiggle{0%,86%,100%{transform:rotate(0)}89%{transform:rotate(-9deg)}92%{transform:rotate(8deg)}95%{transform:rotate(-5deg)}}
-@media(max-width:1100px){.pc-ad .pc-sub{display:none}.pc-ad{padding-right:12px}}
+  box-shadow:0 2px 8px rgba(225,29,116,.12);animation:pdGameGlow 2.4s ease-in-out infinite;transition:transform .2s}
+.pd-game:hover{transform:translateY(-1px) scale(1.03)}
+.pd-game img{width:34px;height:34px;border-radius:9px;display:block;animation:pdGameWiggle 4s ease-in-out infinite}
+.pd-game .pd-game-txt{display:flex;flex-direction:column;line-height:1.15}
+.pd-game .pd-game-title{font:800 14px/1.1 var(--font-sans);color:#d61f69;letter-spacing:-.01em}
+.pd-game .pd-game-sub{font:600 11.5px/1.2 var(--font-sans);color:#475569}
+.pd-game .pd-game-badge{position:absolute;top:-8px;right:-6px;background:#e11d48;color:#fff;font:800 9.5px/1 var(--font-sans);letter-spacing:.06em;padding:4px 6px;border-radius:999px;
+  box-shadow:0 2px 6px rgba(225,29,72,.35);animation:pdGameBlink 1.1s ease-in-out infinite}
+@keyframes pdGameGlow{0%,100%{box-shadow:0 0 0 0 rgba(245,184,61,.55),0 2px 8px rgba(225,29,116,.12)}50%{box-shadow:0 0 0 7px rgba(245,184,61,0),0 2px 8px rgba(225,29,116,.12)}}
+@keyframes pdGameBlink{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes pdGameWiggle{0%,86%,100%{transform:rotate(0)}89%{transform:rotate(-9deg)}92%{transform:rotate(8deg)}95%{transform:rotate(-5deg)}}
+@media(max-width:1100px){.pd-game .pd-game-sub{display:none}.pd-game{padding-right:12px}}
 
-@media(max-width:768px){.pc-ad{margin-left:10px;gap:7px}.pc-ad img{width:30px;height:30px}.pc-ad .pc-name{font-size:13px}}
-@media(max-width:1100px){.pc-ad .pc-name{font-size:11px;line-height:1.1;white-space:normal;max-width:74px}.pc-ad{white-space:normal;margin-left:8px;padding:3px 9px 3px 3px;margin-right:auto;gap:6px}.pc-ad img{width:30px;height:30px}}
-@media(max-width:375px){.pc-ad{margin-left:6px}.pc-ad .pc-name{max-width:60px;font-size:10.5px}}
-@media(max-width:340px){.pc-ad .pc-name{display:none}.pc-ad{padding:3px}}
-@media(prefers-reduced-motion:reduce){.pc-ad,.pc-ad img,.pc-ad .pc-new{animation:none}}
+@media(max-width:768px){.pd-game{margin-left:10px;gap:7px}.pd-game img{width:30px;height:30px}.pd-game .pd-game-title{font-size:13px}}
+@media(max-width:1100px){.pd-game .pd-game-title{font-size:11px;line-height:1.1;white-space:normal;max-width:74px}.pd-game{white-space:normal;margin-left:8px;padding:3px 9px 3px 3px;margin-right:auto;gap:6px}.pd-game img{width:30px;height:30px}}
+@media(max-width:375px){.pd-game{margin-left:6px}.pd-game .pd-game-title{max-width:60px;font-size:10.5px}}
+@media(max-width:340px){.pd-game .pd-game-title{display:none}.pd-game{padding:3px}}
+@media(prefers-reduced-motion:reduce){.pd-game,.pd-game img,.pd-game .pd-game-badge{animation:none}}
 .nav-mobile .nav-cta { margin-top: 8px; text-align: center; background: var(--teal) !important; color: white !important; }
 
 /* ════════════════════════════════════════
@@ -1251,10 +1251,10 @@ footer { background: var(--gray-900); color: rgba(255,255,255,.5); padding: 56px
       <div class="nav-logo-mark">Px</div>
       PharmDigit
     </div>
-    <a class="pc-ad" href="https://www.top300medications.com/" target="_blank" rel="noopener" aria-label="New: PharmCrush, a free top 300 drugs quiz game. Opens top300medications.com" title="New: PharmCrush, a fun quiz game to learn the top 300 drugs. Free to play.">
+    <a class="pd-game" href="https://www.top300medications.com/" target="_blank" rel="noopener" aria-label="New: PharmCrush, a free top 300 drugs quiz game. Opens top300medications.com" title="New: PharmCrush, a fun quiz game to learn the top 300 drugs. Free to play.">
       <img src="/images/pharmcrush-icon.png" alt="PharmCrush icon" width="34" height="34">
-      <span class="pc-txt"><span class="pc-name">Top 300 Drugs Game</span><span class="pc-sub">PharmCrush · free to play ▸</span></span>
-      <span class="pc-new">NEW</span>
+      <span class="pd-game-txt"><span class="pd-game-title">Top 300 Drugs Game</span><span class="pd-game-sub">PharmCrush · free to play ▸</span></span>
+      <span class="pd-game-badge">NEW</span>
     </a>
     <div class="nav-links">
       <a href="/" onclick="navigate('home');return false;" data-page="home">Home</a>
