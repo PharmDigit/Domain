@@ -18263,7 +18263,7 @@ window.PDX = window.PDX || (function () {
         g.addEventListener('click', function () {
           if (!c.checked) return;
           g.disabled = true; g.textContent = 'Opening secure checkout…';
-          Promise.resolve().then(o.onAgree).then(null, function (x) { g.disabled = false; g.textContent = 'Agree & continue to checkout'; $('#pdx-derr', b).textContent = (x && x.message) || 'Checkout could not start. You were not charged.'; });
+          Promise.resolve().then(o.onAgree).then(null, function (x) { if (window.PDXV && PDXV.onCheckoutError(x)) return; g.disabled = false; g.textContent = 'Agree & continue to checkout'; $('#pdx-derr', b).textContent = (x && x.message) || 'Checkout could not start. You were not charged.'; });
         });
         if (bk) bk.addEventListener('click', function () { close(); o.onBack(); });
       }, { wide: true });
@@ -18320,7 +18320,8 @@ window.PDX = window.PDX || (function () {
     acts.push({ label: 'Sign out', id: 'pdx-signout', onClick: function () { close(); o.onSignOut(); } });
     openAccount({ title: 'Your account', email: o.email, status: o.status, actions: acts,
       note: o.note || 'Your pass is saved to your account and works on any device where you sign in. Each PharmDigit app is purchased separately; beta codes unlock all five.',
-      extraHtml: o.extraHtml, onMount: o.onMount });
+      extraHtml: (o.extraHtml || '') + (window.PDXV ? PDXV.accountHtml() : ''),
+      onMount: function (b) { if (o.onMount) o.onMount(b); if (window.PDXV) PDXV.bindAccount(b); } });
   }
 
   /* Standard "signed out" message so every app says the same thing */
@@ -18330,6 +18331,77 @@ window.PDX = window.PDX || (function () {
     statusCard: statusCard, passStatus: passStatus, label: label, buttonHTML: buttonHTML, daysLeft: daysLeft, fmtDate: fmtDate, every: every, esc: esc, USER_IC: USER_IC,
     getStarted: getStarted, disclaimer: disclaimer, betaDialog: betaDialog, betaDone: betaDone, redeemBeta: redeemBeta, account: account, signedOut: signedOut, APPS_ALL: APPS_ALL, version: 3 };
 })();
+
+/* PharmDigit email verification (shared by all apps): a verified email is required before buying a pass.
+   Apps call PDXV.watch(auth) once, PDXV.send(auth) after sign-up, and PDXV.guard(retry) before checkout. */
+window.PDXV = window.PDXV || (function () {
+  'use strict';
+  var auths = [], retry = null;
+  var MSG = { 'auth/too-many-requests': 'Too many emails sent. Please wait a few minutes before trying again.',
+              'auth/network-request-failed': 'No connection. Check your internet connection and try again.' };
+  function A(a) { return a || auths[0] || null; }
+  function watch(a) { if (a && auths.indexOf(a) < 0) auths.push(a); }
+  function needs(a) { a = A(a); var u = a && a.currentUser; return !!u && !u.emailVerified; }
+  function send(a) {
+    a = A(a); watch(a); var u = a && a.currentUser; if (!u) return Promise.reject(new Error('Please sign in first.'));
+    return u.sendEmailVerification({ url: location.origin + location.pathname })
+      .catch(function (e) { if (e && e.code === 'auth/too-many-requests') throw e; return u.sendEmailVerification(); });
+  }
+  function check(a) {
+    a = A(a); var u = a && a.currentUser; if (!u) return Promise.resolve(false);
+    return u.reload().then(function () { var c = a.currentUser; return c && c.emailVerified ? c.getIdToken(true).then(function () { return true; }) : false; });
+  }
+  function errText(e) { return String((e && e.code && MSG[e.code]) || (e && e.message) || 'Something went wrong. Try again.').replace(/^Firebase:\s*/, ''); }
+  function dialog(o) {
+    o = o || {}; var a = A(o.auth), u = a && a.currentUser, then = o.onVerified || null;
+    PDX.modal('verify',
+      '<h2 id="pdx-title">Verify your email</h2>' +
+      '<p class="pdx-small">To buy a pass, please confirm your email address. We sent a verification link to <b>' + PDX.esc(u && u.email || 'your email') + '</b>.</p>' +
+      '<ol class="pdx-small" style="margin:0;padding-left:20px"><li>Open the email from PharmDigit and click the link.</li><li>Come back here and tap <b>I’ve verified</b>.</li></ol>' +
+      '<p class="pdx-small pdx-muted">Don’t see it? Check your Junk or Spam folder, or send it again.</p>' +
+      '<p class="pdx-small" id="pdxv-msg" role="status"></p>' +
+      '<div class="pdx-row"><button class="pdx-btn primary" type="button" id="pdxv-ok">I’ve verified' + (then ? ' · continue' : '') + '</button>' +
+      '<button class="pdx-btn ghost" type="button" id="pdxv-send">Resend email</button></div>' +
+      '<p class="pdx-small"><button class="pdx-link" type="button" id="pdxv-out">Wrong email? Sign out and use another account</button></p>',
+      function (b) {
+        var msg = b.querySelector('#pdxv-msg'), ok = b.querySelector('#pdxv-ok'), sendBtn = b.querySelector('#pdxv-send');
+        function say(t, bad) { msg.textContent = t; msg.style.color = bad ? 'var(--pdx-bad)' : 'var(--pdx-ok)'; }
+        ok.addEventListener('click', function () {
+          var label = ok.textContent; ok.disabled = true; ok.textContent = 'Checking…';
+          check(a).then(function (v) {
+            if (v) { PDX.close(); PDX.toast('Email verified. Thank you!'); if (then) setTimeout(then, 150); return; }
+            say('Not verified yet. Open the link in the email first, then tap “I’ve verified”.', true); ok.disabled = false; ok.textContent = label;
+          }, function (e) { say(errText(e), true); ok.disabled = false; ok.textContent = label; });
+        });
+        sendBtn.addEventListener('click', function () {
+          sendBtn.disabled = true;
+          send(a).then(function () { say('Sent again to ' + (u && u.email || 'your email') + '. It can take a minute to arrive.'); }, function (e) { say(errText(e), true); });
+          setTimeout(function () { sendBtn.disabled = false; }, 20000);
+        });
+        b.querySelector('#pdxv-out').addEventListener('click', function () {
+          PDX.close(); if (a) a.signOut().then(function () { PDX.toast('Signed out. Sign in with the account you want to use.'); }, function () {});
+        });
+      });
+  }
+  // call before starting a purchase: returns true (and shows the verify screen) when the email still needs verifying
+  function guard(onVerified, a) { retry = onVerified || null; if (!needs(a)) return false; dialog({ auth: a, onVerified: onVerified }); return true; }
+  function isUnverified(x) { return !!x && (x.code === 'email-not-verified' || /verify your email/i.test(x.message || '')); }
+  // the checkout server refused because the email is unverified: show the verify screen instead of an error
+  function onCheckoutError(x) { if (!isUnverified(x)) return false; dialog({ onVerified: retry }); return true; }
+  function accountHtml() {
+    return needs() ? '<div class="pdx-fb" style="background:var(--pdx-warn-soft);border-radius:10px;padding:10px 12px"><span class="ttl">Email not verified</span>' +
+      '<span class="pdx-small">Verify your email before buying a pass. <button class="pdx-link" type="button" data-pdxv-verify>Verify now</button></span></div>' : '';
+  }
+  function bindAccount(b) { var v = b && b.querySelector('[data-pdxv-verify]'); if (v) v.addEventListener('click', function () { send().catch(function () {}); dialog({}); }); }
+  // verified in another tab or app: pick it up when the player comes back
+  window.addEventListener('focus', function () {
+    if (!needs()) return;
+    check().then(function (v) { if (v && PDX.isOpen('verify')) PDX.toast('Email verified. Tap “I’ve verified” to continue.'); }, function () {});
+  });
+  return { watch: watch, needs: needs, send: send, check: check, dialog: dialog, guard: guard, onCheckoutError: onCheckoutError,
+           accountHtml: accountHtml, bindAccount: bindAccount, isUnverified: isUnverified };
+})();
+
 
 // ===================== ACCESS, ACCOUNTS & PAYMENTS =====================
 // Same Firebase project, Stripe account and Cloud Functions as PharmDosage, PharmCalculation,
@@ -18416,11 +18488,11 @@ const PTX = (function () {
         catch (e) { await loadScript(`https://cdn.jsdelivr.net/npm/firebase@${v}/firebase-${f}-compat.js`); }
       }
       const app = PDX.firebaseApp(firebase, PT_CONFIG.firebase, PT_CONFIG.appName);   // own sign-in session, shared user list
-      this.auth = app.auth(); this.db = app.firestore();
+      this.auth = app.auth(); this.db = app.firestore(); PDXV.watch(this.auth);
       this.auth.onAuthStateChanged(u => onUser(u ? { uid: u.uid, email: u.email || '' } : null));
     },
     signIn(e, p) { return this.auth.signInWithEmailAndPassword(e, p); },
-    signUp(e, p) { return this.auth.createUserWithEmailAndPassword(e, p); },
+    signUp(e, p) { return this.auth.createUserWithEmailAndPassword(e, p).then(c => { PDXV.send(this.auth).catch(() => {}); return c; }); },
     google() { return this.auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); },
     reset(e) { return this.auth.sendPasswordResetEmail(e); },
     signOut() { return this.auth.signOut(); },
@@ -18595,6 +18667,7 @@ const PTX = (function () {
   function buy(plan) {
     if (premium() && ent.plan === 'lifetime') { toast('You already have a Lifetime Pass. No new payment is needed.'); return; }
     if (!user) return openGetStarted({ plan });
+    if (PDXV.guard(() => buy(plan))) return;   // verified email required
     if (noBackend()) return;
     closeModal();
     const p = PT_PLANS[plan];
