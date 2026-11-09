@@ -553,7 +553,7 @@ fieldset.pt-test{margin:0}
 </style>
 </head>
 <body>
-<div class="pd-sitebar" role="navigation" aria-label="PharmDigit"><a class="pd-back" href="/"><span class="pd-mark"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></span><span><span class="pd-long">Back to </span>PharmDigit</span></a><div class="pd-links"><a class="pd-keep" href="/products">All apps</a><a href="/dosage-forms-qbank">PharmDosage</a><a href="/pharmcalculation/">PharmCalculation</a><a href="/pharmpk/">PharmPK</a><a href="/pharmtherapy/">PharmTherapy</a><a href="/pharmrx/">PharmRx</a><a href="/contact">Contact</a></div></div>
+<div class="pd-sitebar" role="navigation" aria-label="PharmDigit"><a class="pd-back" href="/"><span class="pd-mark"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></span><span><span class="pd-long">Back to </span>PharmDigit</span></a><div class="pd-links"><a class="pd-keep" href="/products/">All apps</a><a href="/dosage-forms-qbank/">PharmDosage</a><a href="/pharmcalculation/">PharmCalculation</a><a href="/pharmpk/">PharmPK</a><a href="/pharmtherapy/">PharmTherapy</a><a href="/pharmrx/">PharmRx</a><a href="/contact/">Contact</a></div></div>
 <header class="bar">
   <div class="bar-in">
     <button class="brand" id="brand" aria-label="PharmAction home">
@@ -602,11 +602,11 @@ const DOMAINS = [
   ['5', 'Pharmacy Management & Leadership', 5, 'Not yet covered', '']
 ];
 const SIBLINGS = {
-  pk: { name: 'PharmPK', url: 'https://pharmdigit.com/pharmpk/' },
-  calc: { name: 'PharmCalculation', url: 'https://pharmdigit.com/pharmcalculation/' },
-  dosage: { name: 'PharmDosage', url: 'https://pharmdigit.com/dosage-forms-qbank' },
-  therapy: { name: 'PharmTherapy', url: 'https://pharmdigit.com/pharmtherapy/' },
-  rx: { name: 'PharmRx', url: 'https://pharmdigit.com/pharmrx/' }
+  pk: { name: 'PharmPK', url: 'https://www.pharmdigit.com/pharmpk/' },
+  calc: { name: 'PharmCalculation', url: 'https://www.pharmdigit.com/pharmcalculation/' },
+  dosage: { name: 'PharmDosage', url: 'https://www.pharmdigit.com/dosage-forms-qbank/' },
+  therapy: { name: 'PharmTherapy', url: 'https://www.pharmdigit.com/pharmtherapy/' },
+  rx: { name: 'PharmRx', url: 'https://www.pharmdigit.com/pharmrx/' }
 };
 const SECS = ['Core concepts', 'Key principles', 'Mechanisms & examples', 'Apply it', 'Exam takeaways', 'Knowledge check'];
 
@@ -15460,5 +15460,27 @@ if (!S.plan && !S.seenOnb) { S.seenOnb = true; save(); setTimeout(() => { if (!$
 })();
 
 </script>
+
+<!-- About section: readable description for students and search engines -->
+<style>
+.pd-about{--pa-bg:#f1f4f5;--pa-line:#dde3e6;--pa-fg:#374151;--pa-head:#0f172a;--pa-teal:#0d9488;background:var(--pa-bg);border-top:1px solid var(--pa-line);color:var(--pa-fg);font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:28px 16px 36px;margin-top:32px}
+.pd-about *{box-sizing:border-box}
+.pd-about .pd-about-in{max-width:860px;margin:0 auto}
+.pd-about h2{font-size:18px;line-height:1.3;margin:0 0 8px;color:var(--pa-head)}
+.pd-about p{margin:0 0 10px}
+.pd-about ul{margin:0 0 12px;padding-left:20px}
+.pd-about li{margin:2px 0}
+.pd-about .pd-about-note{font-size:13px;opacity:.8;margin:0}
+.pd-about a{color:var(--pa-teal)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pd-about{--pa-bg:#1c2532;--pa-line:#2a3544;--pa-fg:#c3cad5;--pa-head:#f1f5f9;--pa-teal:#2dd4bf}}
+:root[data-theme="dark"] .pd-about{--pa-bg:#1c2532;--pa-line:#2a3544;--pa-fg:#c3cad5;--pa-head:#f1f5f9;--pa-teal:#2dd4bf}
+@media print{.pd-about{display:none}}
+</style>
+<section class="pd-about" aria-label="About PharmAction"><div class="pd-about-in">
+<h2>About PharmAction</h2>
+<p>PharmAction is a principles of drug action study app for PharmD P1–P2 students in medicinal chemistry and pharmacology. It builds the reasoning that links a drug’s structure and physicochemical properties to absorption, receptor binding, metabolism and toxicity.</p>
+<ul><li>640 questions across 29 topics in 6 units, with study guides and learning objectives</li><li>87 applied cases from structure to clinical consequence</li><li>"What went wrong?" items that target classic misconceptions</li><li>Interactive tools, module and custom exams, and an adaptive study plan</li><li>Two topics free, no account required</li></ul>
+<p class="pd-about-note">PharmAction is part of <a href="https://www.pharmdigit.com/">PharmDigit</a>’s <a href="https://www.pharmdigit.com/products/">pharmacy learning tools</a>. Independent study aid; not affiliated with NABP. For education only; not for patient care.</p>
+</div></section>
 </body>
 </html>
