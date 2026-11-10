@@ -23,6 +23,7 @@ const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
 //   pharmrx   -> Firestore pharmrx_entitlements/{uid}    (PharmRx)
 //   pharmtherapy -> Firestore pharmtherapy_entitlements/{uid} (PharmTherapy)
 //   pharmaction -> Firestore pharmaction_entitlements/{uid} (PharmAction, Principles of Drug Action)
+//   pharmactionadv -> Firestore pharmactionadv_entitlements/{uid} (PharmAction Advanced, organ-system pharmacology)
 const PRICES = {
   // PharmDosage Q-Bank (unchanged)
   "price_1UO8biRpvhB9DoxSXlzJDynA": { app: "qbank", planType: "semester" },
@@ -42,6 +43,9 @@ const PRICES = {
   // PharmAction (Principles of Drug Action)
   "price_1UT5uhRpvhB9DoxSAmb0fJGr": { app: "pharmaction", planType: "semester" },
   "price_1UT5vPRpvhB9DoxS7590Eehi": { app: "pharmaction", planType: "lifetime" },
+
+  "price_1UaMgpRpvhB9DoxSBx6xaV2S": { app: "pharmactionadv", planType: "semester" },
+  "price_1UaMiDRpvhB9DoxSnH1sGTmW": { app: "pharmactionadv", planType: "lifetime" },
 };
 
 const APPS = {
@@ -79,6 +83,12 @@ const APPS = {
     successUrl:
       "https://www.pharmdigit.com/pharmaction/?pt_checkout=success&session_id={CHECKOUT_SESSION_ID}",
     cancelUrl: "https://www.pharmdigit.com/pharmaction/?pt_checkout=cancel",
+  },
+  pharmactionadv: {
+    collection: "pharmactionadv_entitlements",
+    successUrl:
+      "https://www.pharmdigit.com/pharmaction-advanced/?pt_checkout=success&session_id={CHECKOUT_SESSION_ID}",
+    cancelUrl: "https://www.pharmdigit.com/pharmaction-advanced/?pt_checkout=cancel",
   },
 };
 
