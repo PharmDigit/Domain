@@ -51,6 +51,10 @@ const PRICES = {
   "price_1UaMe4RpvhB9DoxSmaZJfO1s": { app: "pharmbiochem", planType: "semester" },
   "price_1UaMfZRpvhB9DoxSxaA5J3x1": { app: "pharmbiochem", planType: "lifetime" },
 
+  // PharmCrush (www.top300medications.com)
+  "price_1UUvQGRpvhB9DoxSYlaYrZs9": { app: "pharmcrush", planType: "semester" },
+  "price_1UUvQqRpvhB9DoxSxuBaTJmO": { app: "pharmcrush", planType: "lifetime" },
+
   // PharmacyQBank (www.pharmacyqbank.com) sells per-bank passes, not whole-app
   // passes, so each price also names the bank it unlocks. "all" is the
   // all-access bundle. These write nested fields in one document; see the
@@ -119,6 +123,12 @@ const APPS = {
       "https://www.pharmdigit.com/pharmbiochem/?pt_checkout=success&session_id={CHECKOUT_SESSION_ID}",
     cancelUrl: "https://www.pharmdigit.com/pharmbiochem/?pt_checkout=cancel",
   },
+  pharmcrush: {
+    collection: "pharmcrush_entitlements",
+    successUrl:
+      "https://www.top300medications.com/?pc_checkout=success&session_id={CHECKOUT_SESSION_ID}",
+    cancelUrl: "https://www.top300medications.com/?pc_checkout=cancel",
+  },
   pharmqbank: {
     collection: "pharmqbank_entitlements",
     successUrl:
@@ -132,6 +142,8 @@ const ALLOWED_ORIGINS = [
   "https://pharmdigit.com",
   "https://www.pharmacyqbank.com",
   "https://pharmacyqbank.com",
+  "https://www.top300medications.com",
+  "https://top300medications.com",
 ];
 
 // How long each plan runs. Full-app passes are semester or lifetime; the
@@ -178,6 +190,18 @@ exports.createCheckoutSession = onRequest(
       }
 
       const decoded = await getAuth().verifyIdToken(match[1]);
+
+      // The apps gate purchasing on a verified email and expect this exact
+      // shape back: they read body.code regardless of the status line and
+      // show their "verify your email" screen instead of a generic error.
+      // Federated sign-in (Google) arrives already verified.
+      if (!decoded.email_verified) {
+        return res.status(403).json({
+          error: "Please verify your email first.",
+          code: "email-not-verified",
+        });
+      }
+
       const priceId = req.body && req.body.priceId;
       const product = PRICES[priceId];
 
