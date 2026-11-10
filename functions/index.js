@@ -319,7 +319,8 @@ exports.stripeWebhook = onRequest(
 // Beta codes
 // Firestore: beta_codes/{CODE}
 //   active: true|false              switch a code on or off
-//   appIds: ["qbank","pharmCalculation","PharmPK","PharmTherapy","PharmRx"]   apps it unlocks
+//   appIds: ["qbank","pharmCalculation","PharmBiochem","PharmAction",
+//            "PharmActionAdvanced","PharmPK","PharmTherapy","PharmRx"]  apps it unlocks
 //   durationDays: 60                 length of beta access from the day it is redeemed
 //   redeemedCount: 0                 updated by this function
 //   maxRedemptions: 50  (optional)   total accounts that may redeem it
@@ -334,6 +335,10 @@ const APP_ALIASES = {
   pharmpk: "pharmpk",
   pharmrx: "pharmrx",
   pharmtherapy: "pharmtherapy", pharmacotherapy: "pharmtherapy",
+  pharmbiochem: "pharmbiochem", biochem: "pharmbiochem",
+  biochemistry: "pharmbiochem",
+  pharmactionadvanced: "pharmactionadv", pharmactionadv: "pharmactionadv",
+  actionadvanced: "pharmactionadv", advanced: "pharmactionadv",
   pharmaction: "pharmaction", drugaction: "pharmaction",
   principlesofdrugaction: "pharmaction", pda: "pharmaction",
 };
