@@ -462,9 +462,37 @@ code{font-family:var(--f-mono);font-size:.85em}
 fieldset.pt-test{margin:0}
 #kc-obj{max-width:100%;min-width:0;width:min(420px,100%);text-overflow:ellipsis}
 .qcard,.qcard .stem{overflow-wrap:anywhere}
+.pd-sitebar{--pdsb-bg:#f1f4f5;--pdsb-line:#dde3e6;--pdsb-fg:#4b5563;--pdsb-teal:#0d9488;--pdsb-teal-ink:#fff;--pdsb-surface:#fff;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;box-sizing:border-box;width:100%;
+  background:var(--pdsb-bg);border-bottom:1px solid var(--pdsb-line);padding:8px 16px;margin:0;
+  font:600 14px/1.3 Inter,'Segoe UI',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+.pd-sitebar *{box-sizing:border-box}
+.pd-sitebar .pd-back{display:inline-flex;align-items:center;gap:9px;min-height:42px;padding:5px 16px 5px 6px;margin:0;
+  border:1.5px solid var(--pdsb-teal);border-radius:999px;background:var(--pdsb-surface);color:var(--pdsb-teal);
+  font:700 15px/1.2 Inter,'Segoe UI',system-ui,-apple-system,sans-serif;text-decoration:none;white-space:nowrap;
+  transition:background .15s ease,color .15s ease,box-shadow .15s ease}
+.pd-sitebar .pd-back:hover{background:var(--pdsb-teal);color:var(--pdsb-teal-ink);text-decoration:none;box-shadow:0 2px 10px rgba(13,148,136,.25)}
+.pd-sitebar .pd-back:focus-visible{outline:3px solid var(--pdsb-teal);outline-offset:2px}
+.pd-sitebar .pd-back svg{flex:none;width:18px;height:18px}
+.pd-sitebar .pd-mark{flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--pdsb-teal);color:#fff;
+  font:700 12px/1 Inter,'Segoe UI',system-ui,sans-serif;letter-spacing:-.02em;transition:background .15s ease,color .15s ease}
+.pd-sitebar .pd-back:hover .pd-mark{background:#fff;color:var(--pdsb-teal)}
+.pd-sitebar .pd-links{display:flex;align-items:center;gap:4px 18px;flex-wrap:wrap;justify-content:flex-end;margin:0;padding:0}
+.pd-sitebar .pd-links a{color:var(--pdsb-fg);text-decoration:none;font:600 14px/1.3 Inter,'Segoe UI',system-ui,sans-serif;padding:6px 0;white-space:nowrap}
+.pd-sitebar .pd-links a:hover{color:var(--pdsb-teal);text-decoration:underline}
+@media (max-width:640px){
+  .pd-sitebar{padding:8px 12px}
+  .pd-sitebar .pd-links a:not(.pd-keep){display:none}
+  .pd-sitebar .pd-back{min-height:44px}
+}
+@media (max-width:360px){.pd-sitebar .pd-back .pd-long{display:none}}
+@media print{.pd-sitebar{display:none}}
+:root[data-theme="dark"] .pd-sitebar{--pdsb-bg:#1c2532;--pdsb-line:#2a3544;--pdsb-fg:#a3adbd;--pdsb-surface:#161d27;--pdsb-teal:#2dd4bf;--pdsb-teal-ink:#06201c}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pd-sitebar{--pdsb-bg:#1c2532;--pdsb-line:#2a3544;--pdsb-fg:#a3adbd;--pdsb-surface:#161d27;--pdsb-teal:#2dd4bf;--pdsb-teal-ink:#06201c}}
+.pd-sitebar{position:relative;z-index:21}
 </style>
 </head>
 <body>
+<div class="pd-sitebar" role="navigation" aria-label="PharmDigit"><a class="pd-back" href="/"><span class="pd-mark"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></span><span><span class="pd-long">Back to </span>PharmDigit</span></a><div class="pd-links"><a class="pd-keep" href="/products/">All apps</a><a href="/dosage-forms-qbank/">PharmDosage</a><a href="/pharmcalculation/">PharmCalculation</a><a href="/pharmaction/">PharmAction</a><a href="/pharmaction-advanced/">PharmAction Advanced</a><a href="/pharmpk/">PharmPK</a><a href="/pharmtherapy/">PharmTherapy</a><a href="/pharmrx/">PharmRx</a><a href="/contact/">Contact</a></div></div>
 <header class="bar">
   <div class="bar-in">
     <button class="brand" id="brand" aria-label="PharmBiochem home">
