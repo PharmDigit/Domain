@@ -50,6 +50,25 @@ const PRICES = {
 
   "price_1UaMe4RpvhB9DoxSmaZJfO1s": { app: "pharmbiochem", planType: "semester" },
   "price_1UaMfZRpvhB9DoxSxaA5J3x1": { app: "pharmbiochem", planType: "lifetime" },
+
+  // PharmacyQBank (www.pharmacyqbank.com) sells per-bank passes, not whole-app
+  // passes, so each price also names the bank it unlocks. "all" is the
+  // all-access bundle. These write nested fields in one document; see the
+  // webhook below.
+  "price_1UWLPtRpvhB9DoxSwr6sWIjl": { app: "pharmqbank", bank: "dosage", planType: "semester" },
+  "price_1UWLRoRpvhB9DoxSD4Rv0Uax": { app: "pharmqbank", bank: "dosage", planType: "annual" },
+  "price_1UWLTaRpvhB9DoxSrS1POCog": { app: "pharmqbank", bank: "calc", planType: "semester" },
+  "price_1UWLUWRpvhB9DoxSA9ByiqFt": { app: "pharmqbank", bank: "calc", planType: "annual" },
+  "price_1UWLVbRpvhB9DoxSqMckO6hK": { app: "pharmqbank", bank: "therapy", planType: "semester" },
+  "price_1UWLWmRpvhB9DoxS318ns8e3": { app: "pharmqbank", bank: "therapy", planType: "annual" },
+  "price_1UWLXeRpvhB9DoxSBet1nyVn": { app: "pharmqbank", bank: "action", planType: "semester" },
+  "price_1UWLYtRpvhB9DoxST9SKSsrD": { app: "pharmqbank", bank: "action", planType: "annual" },
+  "price_1UWLZzRpvhB9DoxSnNtq7WQ0": { app: "pharmqbank", bank: "pk", planType: "semester" },
+  "price_1UWLb5RpvhB9DoxS8GdtuLV2": { app: "pharmqbank", bank: "pk", planType: "annual" },
+  "price_1UWLcKRpvhB9DoxSR2YleSg6": { app: "pharmqbank", bank: "rx", planType: "semester" },
+  "price_1UWLdNRpvhB9DoxSO03Gs2Tb": { app: "pharmqbank", bank: "rx", planType: "annual" },
+  "price_1UWLeuRpvhB9DoxS12f7XRyM": { app: "pharmqbank", bank: "all", planType: "semester" },
+  "price_1UWLfrRpvhB9DoxSmWmrrPc2": { app: "pharmqbank", bank: "all", planType: "annual" },
 };
 
 const APPS = {
@@ -100,12 +119,24 @@ const APPS = {
       "https://www.pharmdigit.com/pharmbiochem/?pt_checkout=success&session_id={CHECKOUT_SESSION_ID}",
     cancelUrl: "https://www.pharmdigit.com/pharmbiochem/?pt_checkout=cancel",
   },
+  pharmqbank: {
+    collection: "pharmqbank_entitlements",
+    successUrl:
+      "https://www.pharmacyqbank.com/?qb_checkout=success&session_id={CHECKOUT_SESSION_ID}",
+    cancelUrl: "https://www.pharmacyqbank.com/?qb_checkout=cancel",
+  },
 };
 
 const ALLOWED_ORIGINS = [
   "https://www.pharmdigit.com",
   "https://pharmdigit.com",
+  "https://www.pharmacyqbank.com",
+  "https://pharmacyqbank.com",
 ];
+
+// How long each plan runs. Full-app passes are semester or lifetime; the
+// Q-Bank sells semester and annual bank passes.
+const PLAN_MONTHS = { semester: 6, annual: 12 };
 
 function addCalendarMonths(date, months) {
   const result = new Date(date);
@@ -168,6 +199,9 @@ exports.createCheckoutSession = onRequest(
           planType: product.planType,
           priceId,
           app: product.app,
+          // Per-bank products carry the bank; the webhook re-reads it from
+          // PRICES, so this is for the Stripe dashboard's benefit only.
+          ...(product.bank ? { bank: product.bank } : {}),
         },
         success_url: APPS[product.app].successUrl,
         cancel_url: APPS[product.app].cancelUrl,
@@ -262,6 +296,43 @@ exports.stripeWebhook = onRequest(
         const existing = entitlementDoc.exists
           ? entitlementDoc.data()
           : {};
+
+        // Per-bank products (PharmacyQBank) keep one document per user with a
+        // nested field per bank, so they never touch the top-level planType
+        // that the full-app passes use.
+        //   pharmqbank_entitlements/{uid} -> { <bank>: { planType, expiresAt, updatedAt } }
+        if (product.bank) {
+          const now = new Date();
+          const prev = existing[product.bank] || {};
+          const prevExpiry =
+            prev.expiresAt && typeof prev.expiresAt.toDate === "function"
+              ? prev.expiresAt.toDate()
+              : null;
+
+          // Renewing early extends the pass instead of shortening it.
+          const baseDate = prevExpiry && prevExpiry > now ? prevExpiry : now;
+          const expiresAt = addCalendarMonths(
+            baseDate,
+            PLAN_MONTHS[planType] || 6
+          );
+
+          transaction.set(
+            entitlementRef,
+            {
+              [product.bank]: {
+                planType,
+                expiresAt: Timestamp.fromDate(expiresAt),
+                updatedAt: FieldValue.serverTimestamp(),
+              },
+            },
+            { merge: true }
+          );
+
+          transaction.set(eventRef, {
+            processedAt: FieldValue.serverTimestamp(),
+          });
+          return;
+        }
 
         // Never downgrade lifetime access.
         if (existing.planType !== "lifetime") {
