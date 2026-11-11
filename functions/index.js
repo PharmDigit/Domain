@@ -23,8 +23,11 @@ const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
 //   pharmrx   -> Firestore pharmrx_entitlements/{uid}    (PharmRx)
 //   pharmtherapy -> Firestore pharmtherapy_entitlements/{uid} (PharmTherapy)
 //   pharmaction -> Firestore pharmaction_entitlements/{uid} (PharmAction, Principles of Drug Action)
-//   pharmactionadv -> Firestore pharmactionadv_entitlements/{uid} (PharmAction Advanced, organ-system pharmacology)
-//   pharmbiochem -> Firestore pharmbiochem_entitlements/{uid} (PharmBiochem, biochemistry)
+//   pharmcrush -> Firestore pharmcrush_entitlements/{uid} (PharmCrush game, top300medications.com)
+//   pharmbiochem -> Firestore pharmbiochem_entitlements/{uid} (PharmBiochem)
+//   pharmactionadv -> Firestore pharmactionadv_entitlements/{uid} (PharmAction Advanced)
+//   pharmqbank -> Firestore pharmqbank_entitlements/{uid} (PharmacyQBank, pharmacyqbank.com)
+//                 per-bank passes: one doc per user, one nested field per bank
 const PRICES = {
   // PharmDosage Q-Bank (unchanged)
   "price_1UO8biRpvhB9DoxSXlzJDynA": { app: "qbank", planType: "semester" },
@@ -44,21 +47,17 @@ const PRICES = {
   // PharmAction (Principles of Drug Action)
   "price_1UT5uhRpvhB9DoxSAmb0fJGr": { app: "pharmaction", planType: "semester" },
   "price_1UT5vPRpvhB9DoxS7590Eehi": { app: "pharmaction", planType: "lifetime" },
-
-  "price_1UaMgpRpvhB9DoxSBx6xaV2S": { app: "pharmactionadv", planType: "semester" },
-  "price_1UaMiDRpvhB9DoxSnH1sGTmW": { app: "pharmactionadv", planType: "lifetime" },
-
-  "price_1UaMe4RpvhB9DoxSmaZJfO1s": { app: "pharmbiochem", planType: "semester" },
-  "price_1UaMfZRpvhB9DoxSxaA5J3x1": { app: "pharmbiochem", planType: "lifetime" },
-
-  // PharmCrush (www.top300medications.com)
+  // PharmCrush (top300medications.com)
   "price_1UUvQGRpvhB9DoxSYlaYrZs9": { app: "pharmcrush", planType: "semester" },
   "price_1UUvQqRpvhB9DoxSxuBaTJmO": { app: "pharmcrush", planType: "lifetime" },
-
-  // PharmacyQBank (www.pharmacyqbank.com) sells per-bank passes, not whole-app
-  // passes, so each price also names the bank it unlocks. "all" is the
-  // all-access bundle. These write nested fields in one document; see the
-  // webhook below.
+  // PharmBiochem
+  "price_1UaMe4RpvhB9DoxSmaZJfO1s": { app: "pharmbiochem", planType: "semester" },
+  "price_1UaMfZRpvhB9DoxSxaA5J3x1": { app: "pharmbiochem", planType: "lifetime" },
+  // PharmAction Advanced
+  "price_1UaMgpRpvhB9DoxSBx6xaV2S": { app: "pharmactionadv", planType: "semester" },
+  "price_1UaMiDRpvhB9DoxSnH1sGTmW": { app: "pharmactionadv", planType: "lifetime" },
+  // PharmacyQBank sells per-bank passes, so each price also names its bank.
+  // "all" is the all-access bundle. Terms are semester (6mo) and annual (12mo).
   "price_1UWLPtRpvhB9DoxSwr6sWIjl": { app: "pharmqbank", bank: "dosage", planType: "semester" },
   "price_1UWLRoRpvhB9DoxSD4Rv0Uax": { app: "pharmqbank", bank: "dosage", planType: "annual" },
   "price_1UWLTaRpvhB9DoxSrS1POCog": { app: "pharmqbank", bank: "calc", planType: "semester" },
@@ -111,11 +110,11 @@ const APPS = {
       "https://www.pharmdigit.com/pharmaction/?pt_checkout=success&session_id={CHECKOUT_SESSION_ID}",
     cancelUrl: "https://www.pharmdigit.com/pharmaction/?pt_checkout=cancel",
   },
-  pharmactionadv: {
-    collection: "pharmactionadv_entitlements",
+  pharmcrush: {
+    collection: "pharmcrush_entitlements",
     successUrl:
-      "https://www.pharmdigit.com/pharmaction-advanced/?pt_checkout=success&session_id={CHECKOUT_SESSION_ID}",
-    cancelUrl: "https://www.pharmdigit.com/pharmaction-advanced/?pt_checkout=cancel",
+      "https://www.top300medications.com/?pc_checkout=success&session_id={CHECKOUT_SESSION_ID}",
+    cancelUrl: "https://www.top300medications.com/?pc_checkout=cancel",
   },
   pharmbiochem: {
     collection: "pharmbiochem_entitlements",
@@ -123,14 +122,17 @@ const APPS = {
       "https://www.pharmdigit.com/pharmbiochem/?pt_checkout=success&session_id={CHECKOUT_SESSION_ID}",
     cancelUrl: "https://www.pharmdigit.com/pharmbiochem/?pt_checkout=cancel",
   },
-  pharmcrush: {
-    collection: "pharmcrush_entitlements",
+  pharmactionadv: {
+    collection: "pharmactionadv_entitlements",
     successUrl:
-      "https://www.top300medications.com/?pc_checkout=success&session_id={CHECKOUT_SESSION_ID}",
-    cancelUrl: "https://www.top300medications.com/?pc_checkout=cancel",
+      "https://www.pharmdigit.com/pharmaction-advanced/?pt_checkout=success&session_id={CHECKOUT_SESSION_ID}",
+    cancelUrl: "https://www.pharmdigit.com/pharmaction-advanced/?pt_checkout=cancel",
   },
   pharmqbank: {
     collection: "pharmqbank_entitlements",
+    // Beta codes grant the all-access bank rather than a top-level pass,
+    // because this app stores one nested field per bank.
+    betaField: "all",
     successUrl:
       "https://www.pharmacyqbank.com/?qb_checkout=success&session_id={CHECKOUT_SESSION_ID}",
     cancelUrl: "https://www.pharmacyqbank.com/?qb_checkout=cancel",
@@ -140,14 +142,14 @@ const APPS = {
 const ALLOWED_ORIGINS = [
   "https://www.pharmdigit.com",
   "https://pharmdigit.com",
-  "https://www.pharmacyqbank.com",
-  "https://pharmacyqbank.com",
   "https://www.top300medications.com",
   "https://top300medications.com",
+  "https://www.pharmacyqbank.com",
+  "https://pharmacyqbank.com",
 ];
 
-// How long each plan runs. Full-app passes are semester or lifetime; the
-// Q-Bank sells semester and annual bank passes.
+// Pass lengths in months. Full-app passes are semester or lifetime; the
+// Q-Bank also sells annual bank passes.
 const PLAN_MONTHS = { semester: 6, annual: 12 };
 
 function addCalendarMonths(date, months) {
@@ -190,18 +192,6 @@ exports.createCheckoutSession = onRequest(
       }
 
       const decoded = await getAuth().verifyIdToken(match[1]);
-
-      // The apps gate purchasing on a verified email and expect this exact
-      // shape back: they read body.code regardless of the status line and
-      // show their "verify your email" screen instead of a generic error.
-      // Federated sign-in (Google) arrives already verified.
-      if (!decoded.email_verified) {
-        return res.status(403).json({
-          error: "Please verify your email first.",
-          code: "email-not-verified",
-        });
-      }
-
       const priceId = req.body && req.body.priceId;
       const product = PRICES[priceId];
 
@@ -223,8 +213,6 @@ exports.createCheckoutSession = onRequest(
           planType: product.planType,
           priceId,
           app: product.app,
-          // Per-bank products carry the bank; the webhook re-reads it from
-          // PRICES, so this is for the Stripe dashboard's benefit only.
           ...(product.bank ? { bank: product.bank } : {}),
         },
         success_url: APPS[product.app].successUrl,
@@ -323,7 +311,7 @@ exports.stripeWebhook = onRequest(
 
         // Per-bank products (PharmacyQBank) keep one document per user with a
         // nested field per bank, so they never touch the top-level planType
-        // that the full-app passes use.
+        // the full-app passes use:
         //   pharmqbank_entitlements/{uid} -> { <bank>: { planType, expiresAt, updatedAt } }
         if (product.bank) {
           const now = new Date();
@@ -415,7 +403,8 @@ exports.stripeWebhook = onRequest(
 // Firestore: beta_codes/{CODE}
 //   active: true|false              switch a code on or off
 //   appIds: ["qbank","pharmCalculation","PharmBiochem","PharmAction",
-//            "PharmActionAdvanced","PharmPK","PharmTherapy","PharmRx"]  apps it unlocks
+//            "PharmActionAdvanced","PharmPK","PharmTherapy","PharmRx",
+//            "PharmCrush","PharmacyQBank"]    apps it unlocks
 //   durationDays: 60                 length of beta access from the day it is redeemed
 //   redeemedCount: 0                 updated by this function
 //   maxRedemptions: 50  (optional)   total accounts that may redeem it
@@ -430,12 +419,14 @@ const APP_ALIASES = {
   pharmpk: "pharmpk",
   pharmrx: "pharmrx",
   pharmtherapy: "pharmtherapy", pharmacotherapy: "pharmtherapy",
+  pharmaction: "pharmaction", drugaction: "pharmaction",
+  principlesofdrugaction: "pharmaction", pda: "pharmaction",
   pharmbiochem: "pharmbiochem", biochem: "pharmbiochem",
   biochemistry: "pharmbiochem",
   pharmactionadvanced: "pharmactionadv", pharmactionadv: "pharmactionadv",
   actionadvanced: "pharmactionadv", advanced: "pharmactionadv",
-  pharmaction: "pharmaction", drugaction: "pharmaction",
-  principlesofdrugaction: "pharmaction", pda: "pharmaction",
+  pharmcrush: "pharmcrush", crush: "pharmcrush",
+  pharmacyqbank: "pharmqbank", pharmqbank: "pharmqbank",
 };
 
 class BetaError extends Error {
@@ -525,25 +516,29 @@ exports.redeemBetaCode = onRequest(
         const kept = [];
         docs.forEach((d, i) => {
           const e = d.exists ? d.data() : {};
-          const exp = toDate(e.expiresAt);
+          // Most apps keep the pass at the top level; the Q-Bank keeps one
+          // nested field per bank, so its beta grant goes under betaField.
+          const field = APPS[apps[i]].betaField;
+          const cur = field ? e[field] || {} : e;
+          const exp = toDate(cur.expiresAt);
           const paidActive =
-            e.planType === "lifetime" ||
-            (e.planType === "semester" && exp && exp > now);
-          const longerBeta = e.planType === "beta" && exp && exp >= expiresAt;
+            cur.planType === "lifetime" ||
+            ((cur.planType === "semester" || cur.planType === "annual") &&
+              exp &&
+              exp > now);
+          const longerBeta =
+            cur.planType === "beta" && exp && exp >= expiresAt;
           if (paidActive || longerBeta) {
             kept.push(apps[i]);
             return;
           }
-          tx.set(
-            refs[i],
-            {
-              planType: "beta",
-              expiresAt: Timestamp.fromDate(expiresAt),
-              betaCode: code,
-              updatedAt: FieldValue.serverTimestamp(),
-            },
-            { merge: true }
-          );
+          const grant = {
+            planType: "beta",
+            expiresAt: Timestamp.fromDate(expiresAt),
+            betaCode: code,
+            updatedAt: FieldValue.serverTimestamp(),
+          };
+          tx.set(refs[i], field ? { [field]: grant } : grant, { merge: true });
           granted.push(apps[i]);
         });
 
@@ -573,3 +568,9 @@ exports.redeemBetaCode = onRequest(
     }
   }
 );
+// rebuilt 2026-10-23 for Node.js security patch
+// new Stripe keys 2026-10-23
+// fixed Stripe secrets 2026-10-23
+// rk key fix 2026-10-23
+// rk fix 2
+// rk fix 2
